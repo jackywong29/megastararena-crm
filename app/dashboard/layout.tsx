@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { TutorialModal } from '@/components/tutorial/TutorialModal'
 import type { Profile } from '@/types'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </main>
 
       <MobileNav unreadCount={unreadCount ?? 0} />
+      <TutorialModal />
     </div>
   )
 }

@@ -2,15 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CalendarDays, Bell, FolderOpen, Calendar } from 'lucide-react'
+import { Home, CalendarDays, Bell, CheckSquare, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const items = [
-  { href: '/dashboard',              label: 'Home',     icon: Home },
-  { href: '/dashboard/shows',        label: 'Shows',    icon: CalendarDays },
-  { href: '/dashboard/calendar',     label: 'Calendar', icon: Calendar },
-  { href: '/dashboard/company',      label: 'Hub',      icon: FolderOpen },
-  { href: '/dashboard/notifications', label: 'Alerts',  icon: Bell },
+  { href: '/dashboard',               label: 'Home',     icon: Home },
+  { href: '/dashboard/shows',         label: 'Shows',    icon: CalendarDays },
+  { href: '/dashboard/calendar',      label: 'Calendar', icon: Calendar },
+  { href: '/dashboard/tasks',         label: 'Tasks',    icon: CheckSquare },
+  { href: '/dashboard/notifications', label: 'Alerts',   icon: Bell },
 ]
 
 export function MobileNav({ unreadCount = 0 }: { unreadCount?: number }) {

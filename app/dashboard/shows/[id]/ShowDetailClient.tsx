@@ -9,8 +9,9 @@ import { TaskList } from '@/components/tasks/TaskList'
 import { DocumentList } from '@/components/documents/DocumentList'
 import {
   formatDate, formatTime, STAGE_LABELS, STAGE_COLORS,
-  timeAgo, cn
+  timeAgo, cn, STAGE_SOP_TASKS
 } from '@/lib/utils'
+import type { Department } from '@/types'
 import { FileText, CheckSquare, Info, Activity, Phone, Mail, User, Users, Clock, Calendar, Lock } from 'lucide-react'
 import type { Show, Task, Document as Doc, Profile, ShowStage, ActivityLog } from '@/types'
 
@@ -34,14 +35,32 @@ export function ShowDetailClient({
   const [stage, setStage] = useState<ShowStage>(currentStage)
 
   const handleStageChange = async (newStage: ShowStage) => {
+    const prevStage = stage
     setStage(newStage)
+
     await supabase.from('shows').update({ stage: newStage, updated_at: new Date().toISOString() }).eq('id', showId)
     await supabase.from('activity_log').insert({
       show_id: showId,
       user_id: userId,
       action: 'updated_stage',
-      details: { from: stage, to: newStage },
+      details: { from: prevStage, to: newStage },
     })
+
+    // Insert SOP tasks for the new stage
+    const stageTasks = STAGE_SOP_TASKS[newStage] ?? {}
+    const sopInserts = Object.entries(stageTasks).flatMap(([dept, titles]) =>
+      (titles as string[]).map(title => ({
+        show_id: showId,
+        title,
+        department: dept as Department,
+        status: 'pending' as const,
+        created_by: userId,
+      }))
+    )
+    if (sopInserts.length > 0) {
+      await supabase.from('tasks').insert(sopInserts)
+    }
+
     router.refresh()
   }
 

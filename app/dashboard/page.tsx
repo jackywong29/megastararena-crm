@@ -62,24 +62,26 @@ export default async function DashboardPage() {
         {/* Stats strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total Shows',   value: totalShows ?? 0,    icon: Star,         color: 'text-[#E7191F]',  bg: 'bg-[#E7191F]/10' },
-            { label: 'Confirmed',     value: confirmedShows ?? 0, icon: CalendarDays, color: 'text-blue-400',   bg: 'bg-blue-500/10' },
-            { label: 'Inquiries',     value: inquiries ?? 0,     icon: TrendingUp,   color: 'text-amber-400',  bg: 'bg-amber-500/10' },
-            { label: 'Pending Tasks', value: pendingTasks ?? 0,  icon: CheckSquare,  color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          ].map(({ label, value, icon: Icon, color, bg }) => (
-            <Card key={label}>
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">{label}</p>
-                    <p className="text-2xl font-bold text-white mt-0.5">{value}</p>
+            { label: 'Total Shows',   value: totalShows ?? 0,    icon: Star,         color: 'text-[#E7191F]',   bg: 'bg-[#E7191F]/10',    href: '/dashboard/shows' },
+            { label: 'Confirmed',     value: confirmedShows ?? 0, icon: CalendarDays, color: 'text-blue-400',    bg: 'bg-blue-500/10',     href: '/dashboard/shows' },
+            { label: 'Inquiries',     value: inquiries ?? 0,     icon: TrendingUp,   color: 'text-amber-400',   bg: 'bg-amber-500/10',    href: '/dashboard/shows' },
+            { label: 'Pending Tasks', value: pendingTasks ?? 0,  icon: CheckSquare,  color: 'text-emerald-400', bg: 'bg-emerald-500/10',  href: '/dashboard/tasks' },
+          ].map(({ label, value, icon: Icon, color, bg, href }) => (
+            <Link key={label} href={href}>
+              <Card className="hover:border-zinc-700 hover:bg-zinc-800/50 transition-all cursor-pointer">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">{label}</p>
+                      <p className="text-2xl font-bold text-white mt-0.5">{value}</p>
+                    </div>
+                    <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
+                      <Icon className={`w-4.5 h-4.5 ${color}`} />
+                    </div>
                   </div>
-                  <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
-                    <Icon className={`w-4.5 h-4.5 ${color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 

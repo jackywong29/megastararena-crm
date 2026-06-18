@@ -5,24 +5,19 @@ import type { Profile } from '@/types'
 
 const values = [
   {
-    title: 'Excellence Without Exception',
+    word: 'LEAD',
+    title: 'We set the standard',
     body: 'We hold every department to the highest standard. There is no second place in live entertainment — every show we touch must leave an impression.',
   },
   {
-    title: 'One Team, One Show',
-    body: 'From Sales to Tech, we operate as a single unit. Great productions are never built by one department alone — they are earned through seamless collaboration.',
+    word: 'HOME',
+    title: 'We build belonging',
+    body: 'MegaStar Arena is where artists feel at home on stage and audiences feel at home in the crowd. We create the conditions for that to happen, every time.',
   },
   {
-    title: 'Integrity in Every Promise',
-    body: 'We honour our word to clients, to artists, and to each other. Our reputation is built on delivery, and delivery is built on trust.',
-  },
-  {
-    title: 'Innovation in Our DNA',
-    body: 'We continuously improve our processes, tools, and craft — because the world changes, and so do our audiences. Complacency is not an option.',
-  },
-  {
-    title: 'People Build Legacies',
-    body: 'Our team is our greatest asset. We invest in their growth, their voice, and their craft — because the stage is only as strong as those who build it.',
+    word: 'ENTERTAIN',
+    title: 'We go beyond the stage',
+    body: 'Great entertainment is more than a performance. It\'s the feeling in the room, the memory that lingers. We own every detail that creates that moment.',
   },
 ]
 
@@ -43,11 +38,15 @@ export default async function MissionPage() {
         {/* Tagline */}
         <div className="text-center py-10 border-b border-zinc-800">
           <p className="text-xs font-semibold text-[#E7191F] uppercase tracking-widest mb-4">MegaStar Arena KL</p>
-          <blockquote className="text-2xl md:text-3xl font-bold text-white leading-snug">
-            &ldquo;Where the world becomes the stage,
-            <br className="hidden sm:block" />
-            {' '}and the stage becomes the world.&rdquo;
-          </blockquote>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            {['LEAD', 'HOME', 'ENTERTAIN'].map((word, i) => (
+              <span key={word} className="flex items-center gap-3">
+                <span className="text-lg md:text-xl font-black text-white tracking-wide">{word}</span>
+                {i < 2 && <span className="text-[#E7191F] font-bold text-xl">·</span>}
+              </span>
+            ))}
+          </div>
+          <p className="text-zinc-500 text-sm italic">We set the standard, build belonging and go beyond the stage</p>
         </div>
 
         {/* Mission */}
@@ -57,8 +56,7 @@ export default async function MissionPage() {
             <h2 className="text-xl font-bold text-white">Our Mission</h2>
           </div>
           <p className="text-zinc-400 leading-relaxed text-base pl-4">
-            To deliver Malaysia&apos;s most extraordinary live entertainment experiences — where world-class production meets
-            effortless logistics, and every show is executed without compromise. We exist to make the impossible look seamless.
+            The leading home of entertainment. Where world-class artists perform, audiences feel at home, and every show leaves a lasting mark.
           </p>
         </div>
 
@@ -69,9 +67,7 @@ export default async function MissionPage() {
             <h2 className="text-xl font-bold text-white">Our Vision</h2>
           </div>
           <p className="text-zinc-400 leading-relaxed text-base pl-4">
-            To make Kuala Lumpur a premier destination for live events in Asia — building a legacy where artists
-            choose MegaStar as their stage and audiences return for the memories. We are building something that
-            outlasts any single show.
+            To be Kuala Lumpur&apos;s most sought-after concert venue — a stage where great artists shine, audiences feel something real, and every guest leaves with a memory.
           </p>
         </div>
 
@@ -84,8 +80,8 @@ export default async function MissionPage() {
           <div className="grid grid-cols-1 gap-4 pl-4">
             {values.map((v, i) => (
               <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
-                <div className="flex items-start gap-3">
-                  <span className="text-[#E7191F] font-bold text-sm w-5 flex-shrink-0 mt-0.5">0{i + 1}</span>
+                <div className="flex items-start gap-4">
+                  <span className="text-[#E7191F] font-black text-lg tracking-widest flex-shrink-0 mt-0.5">{v.word}</span>
                   <div>
                     <h3 className="font-semibold text-white mb-1.5">{v.title}</h3>
                     <p className="text-zinc-500 text-sm leading-relaxed">{v.body}</p>

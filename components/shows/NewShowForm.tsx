@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { SOP_TASKS, DEPARTMENTS } from '@/lib/utils'
+import { STAGE_SOP_TASKS } from '@/lib/utils'
 import type { EventType, ShowStage, Department } from '@/types'
 
 export function NewShowForm() {
@@ -76,12 +76,13 @@ export function NewShowForm() {
     }
 
     if (data) {
-      // Auto-create SOP tasks for all departments
-      const sopInserts = DEPARTMENTS.flatMap((dept: Department) =>
-        SOP_TASKS[dept].map(title => ({
+      // Auto-create SOP tasks for the initial stage only
+      const stageTasks = STAGE_SOP_TASKS[form.stage as keyof typeof STAGE_SOP_TASKS] ?? {}
+      const sopInserts = Object.entries(stageTasks).flatMap(([dept, titles]) =>
+        (titles as string[]).map(title => ({
           show_id: data.id,
           title,
-          department: dept,
+          department: dept as Department,
           status: 'pending' as const,
           created_by: user?.id ?? null,
         }))
@@ -156,7 +157,7 @@ export function NewShowForm() {
         </div>
 
         <div className="bg-zinc-800/50 rounded-lg px-4 py-3 text-xs text-zinc-500 border border-zinc-700">
-          SOP tasks for all departments will be auto-created when you submit.
+          SOP tasks for the initial stage will be auto-created. More tasks unlock as the show progresses through stages.
         </div>
       </div>
 

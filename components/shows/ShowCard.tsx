@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Calendar, Users, CheckSquare } from 'lucide-react'
+import { Calendar, Users, CheckSquare, AlertTriangle } from 'lucide-react'
 import { cn, formatDate, STAGE_COLORS, STAGE_LABELS, EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/utils'
 import type { Show, Task } from '@/types'
 
@@ -14,9 +14,22 @@ export function ShowCard({ show, tasks = [] }: ShowCardProps) {
   const doneTasks = tasks.filter(t => t.status === 'done').length
   const totalTasks = tasks.length
 
+  const isPastDue = show.show_date && show.stage !== 'done' &&
+    new Date(show.show_date + 'T23:59:59') < new Date()
+
   return (
     <Link href={`/dashboard/shows/${show.id}`}>
-      <div className="bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/60 transition-all p-4 cursor-pointer group">
+      <div className={cn(
+        'bg-zinc-900 rounded-xl border hover:bg-zinc-800/60 transition-all p-4 cursor-pointer group',
+        isPastDue ? 'border-amber-500/40 hover:border-amber-500/60' : 'border-zinc-800 hover:border-zinc-700'
+      )}>
+        {/* Past-due warning */}
+        {isPastDue && (
+          <div className="flex items-center gap-1.5 text-amber-400 text-xs mb-2.5 font-medium">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Date passed — update stage
+          </div>
+        )}
         {/* Top row */}
         <div className="flex items-start justify-between gap-2 mb-3">
           <h3 className="font-semibold text-white text-sm leading-snug group-hover:text-[#E7191F] transition-colors line-clamp-2 flex-1">

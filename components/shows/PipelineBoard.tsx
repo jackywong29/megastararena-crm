@@ -16,11 +16,12 @@ export function PipelineBoard({ shows, tasks }: PipelineBoardProps) {
   const getTasksForShow = (showId: string) => tasks.filter(t => t.show_id === showId)
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-x-visible">
+      <style>{`.pipeline-col { min-width: 260px; } @media (min-width: 768px) { .pipeline-col { min-width: unset; } }`}</style>
       {STAGE_ORDER.map((stage) => {
         const stageShows = getShowsByStage(stage)
         return (
-          <div key={stage} className="flex flex-col">
+          <div key={stage} className="pipeline-col flex flex-col flex-shrink-0 md:flex-shrink">
             {/* Column header */}
             <div className="flex items-center gap-2 mb-3">
               <div className={`w-2.5 h-2.5 rounded-full ${STAGE_HEADER_COLORS[stage]}`} />

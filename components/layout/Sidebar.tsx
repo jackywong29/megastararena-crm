@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, User
+  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle
 } from 'lucide-react'
 import { cn, getInitials, DEPARTMENT_LABELS } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/dashboard',          label: 'Home',        icon: Home },
   { href: '/dashboard/shows',    label: 'Shows',       icon: CalendarDays },
   { href: '/dashboard/calendar', label: 'Calendar',    icon: Calendar },
+  { href: '/dashboard/tasks',    label: 'My Tasks',    icon: CheckSquare },
 ]
 
 const bottomNavItems = [
@@ -137,13 +138,22 @@ export function Sidebar({ profile, unreadCount = 0 }: SidebarProps) {
             </div>
           </div>
         </Link>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-600 hover:text-white hover:bg-zinc-900 transition-colors text-sm mt-1"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign out
-        </button>
+        <div className="flex items-center gap-1 mt-1">
+          <button
+            onClick={handleLogout}
+            className="flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-600 hover:text-white hover:bg-zinc-900 transition-colors text-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign out
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-tutorial'))}
+            className="p-2 rounded-lg text-zinc-600 hover:text-white hover:bg-zinc-900 transition-colors"
+            title="How to use this app"
+          >
+            <HelpCircle className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </aside>
   )

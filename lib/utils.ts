@@ -114,38 +114,52 @@ export function getInitials(name: string | null, email: string): string {
   return email.slice(0, 2).toUpperCase()
 }
 
-export const SOP_TASKS: Record<Department, string[]> = {
-  sales: [
-    'Send venue specs to client',
-    'Conduct site visit',
-    'Issue quotation with T&C',
-    'Receive signed quotation',
-    'Create WhatsApp group',
-    'Lock calendar date',
-    'Alignment meeting',
-  ],
-  finance: [
-    'Issue invoice to client',
-    'Collect deposit payment',
-    'Confirm payment received',
-    'Final balance collection',
-  ],
-  operations: [
-    'Setup checklist',
-    'Staff roster',
-    'Staff briefing',
-    'Post-event cleanup',
-  ],
-  tech: [
-    'Collect tech rider from client',
-    'Confirm PA & lighting setup',
-    'Receive production schedule from client',
-    'Show-day standby',
-    'Post-show dismantle',
-  ],
-  management: [
-    'Approve quotation',
-    'Sign-off event plan',
-    'Post-event debrief',
-  ],
+export const STAGE_SOP_TASKS: Partial<Record<ShowStage, Partial<Record<Department, string[]>>>> = {
+  inquiry: {
+    sales: [
+      'Send venue specs to client',
+      'Conduct site visit',
+      'Issue quotation with T&C',
+      'Receive signed quotation',
+      'Create WhatsApp group',
+      'Lock calendar date',
+      'Alignment meeting',
+    ],
+  },
+  confirmed: {
+    finance: [
+      'Issue invoice to client',
+      'Collect deposit payment',
+      'Confirm payment received',
+      'Final balance collection',
+    ],
+    management: [
+      'Approve quotation',
+      'Sign-off event plan',
+    ],
+  },
+  day_of: {
+    tech: [
+      'Collect tech rider from client',
+      'Confirm PA & lighting setup',
+      'Receive production schedule from client',
+      'Show-day standby',
+    ],
+    operations: [
+      'Setup checklist',
+      'Staff roster',
+      'Staff briefing',
+    ],
+  },
+  done: {
+    tech: [
+      'Post-show dismantle',
+    ],
+    operations: [
+      'Post-event cleanup',
+    ],
+    management: [
+      'Post-event debrief',
+    ],
+  },
 }
