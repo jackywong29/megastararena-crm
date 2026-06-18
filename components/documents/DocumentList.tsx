@@ -43,6 +43,8 @@ export function DocumentList({ showId, initialDocs, profile }: DocumentListProps
   const [uploadCategory, setUploadCategory] = useState<DocumentCategory>('other')
   const [error, setError] = useState<string | null>(null)
 
+  const canUpload = profile?.role === 'admin' || profile?.role === 'department_head'
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -104,35 +106,37 @@ export function DocumentList({ showId, initialDocs, profile }: DocumentListProps
 
   return (
     <div className="space-y-4">
-      {/* Upload area */}
-      <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex-1 min-w-48">
-            <Select value={uploadCategory} onValueChange={v => setUploadCategory(v as DocumentCategory)}>
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map(cat => (
-                  <SelectItem key={cat} value={cat}>
-                    {CATEGORY_ICONS[cat]} {DOC_CATEGORY_LABELS[cat]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* Upload area — admins and dept heads only */}
+      {canUpload && (
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex-1 min-w-48">
+              <Select value={uploadCategory} onValueChange={v => setUploadCategory(v as DocumentCategory)}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(cat => (
+                    <SelectItem key={cat} value={cat}>
+                      {CATEGORY_ICONS[cat]} {DOC_CATEGORY_LABELS[cat]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="gap-2"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploading ? 'Uploading...' : 'Upload File'}
+            </Button>
+            <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
           </div>
-          <Button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="gap-2"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            {uploading ? 'Uploading...' : 'Upload File'}
-          </Button>
-          <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+          {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
         </div>
-        {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
-      </div>
+      )}
 
       {/* Document list grouped by category */}
       {docsByCategory.length === 0 ? (

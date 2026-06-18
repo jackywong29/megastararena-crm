@@ -47,6 +47,7 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
   const s = show as Show
   const stageColor = STAGE_COLORS[s.stage]
   const typeColor = EVENT_TYPE_COLORS[s.event_type]
+  const isStaff = p?.role === 'staff'
 
   return (
     <>
@@ -84,9 +85,9 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-wrap">
-              <EditShowDialog show={s} userRole={p?.role as UserRole | null} />
+              {!isStaff && <EditShowDialog show={s} userRole={p?.role as UserRole | null} />}
               {/* Stage changer */}
-              <ShowDetailClient showId={s.id} currentStage={s.stage} userId={user.id} />
+              <ShowDetailClient showId={s.id} currentStage={s.stage} userId={user.id} isStaff={isStaff} />
             </div>
           </div>
         </div>
@@ -101,6 +102,7 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
           documents={documents as Document[] ?? []}
           activity={activity ?? []}
           profile={p}
+          isStaff={isStaff}
           tabMode
         />
       </div>

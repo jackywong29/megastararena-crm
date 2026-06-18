@@ -1,5 +1,5 @@
-export type Department = 'management' | 'finance' | 'operations' | 'tech' | 'sales'
-export type UserRole = 'admin' | 'department_head'
+export type Department = 'management' | 'finance' | 'operations' | 'tech' | 'sales' | 'event'
+export type UserRole = 'admin' | 'department_head' | 'staff'
 export type ShowStage = 'inquiry' | 'confirmed' | 'day_of' | 'done'
 export type EventType = 'concert' | 'corporate' | 'private_function' | 'other'
 export type TaskStatus = 'pending' | 'in_progress' | 'done'
@@ -91,13 +91,35 @@ export interface ActivityLog {
   profiles?: Profile
 }
 
+export interface PostReaction {
+  id: string
+  post_id: string
+  user_id: string
+  emoji: string
+  created_at: string
+}
+
+export interface PostComment {
+  id: string
+  post_id: string
+  user_id: string
+  content: string
+  created_at: string
+  updated_at: string
+  profiles?: Profile | null
+}
+
 export interface Post {
   id: string
   content: string
+  is_pinned?: boolean
+  pinned_at?: string | null
   created_by: string | null
   created_at: string
   updated_at: string
   profiles?: Profile
+  post_reactions?: PostReaction[]
+  post_comments?: PostComment[]
 }
 
 export interface CompanyFile {

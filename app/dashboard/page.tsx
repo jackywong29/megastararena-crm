@@ -24,7 +24,12 @@ export default async function DashboardPage() {
 
   const { data: posts } = await supabase
     .from('posts')
-    .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
+    .select(`
+      *,
+      profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at),
+      post_reactions(id, post_id, user_id, emoji, created_at),
+      post_comments(id, post_id, user_id, content, created_at, updated_at, profiles(id, full_name, email, avatar_url))
+    `)
     .order('created_at', { ascending: false })
     .limit(30)
 
@@ -37,8 +42,6 @@ export default async function DashboardPage() {
     .limit(3)
 
   const p = profile as Profile | null
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const name = p?.full_name?.split(' ')[0] ?? 'there'
 
   return (
@@ -55,7 +58,7 @@ export default async function DashboardPage() {
       <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto w-full">
         {/* Greeting */}
         <div>
-          <h2 className="text-2xl font-bold text-white">{greeting}, {name}</h2>
+          <h2 className="text-2xl font-bold text-white">Hello, {name} 👋</h2>
           <p className="text-zinc-500 text-sm mt-1">Here&apos;s what&apos;s happening at MegaStar Arena.</p>
         </div>
 

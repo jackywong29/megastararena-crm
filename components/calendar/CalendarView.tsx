@@ -29,6 +29,8 @@ export function CalendarView({ shows }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const touchStartX = useRef<number>(0)
   const touchStartY = useRef<number>(0)
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const [swiping, setSwiping] = useState(false)
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
@@ -95,16 +97,36 @@ export function CalendarView({ shows }: CalendarViewProps) {
       {/* Calendar grid */}
       <div
         className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden"
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: swiping ? 'none' : 'transform 0.25s ease',
+        }}
         onTouchStart={(e) => {
           touchStartX.current = e.touches[0].clientX
           touchStartY.current = e.touches[0].clientY
+          setSwiping(true)
+        }}
+        onTouchMove={(e) => {
+          const dx = e.touches[0].clientX - touchStartX.current
+          const dy = Math.abs(e.touches[0].clientY - touchStartY.current)
+          if (Math.abs(dx) > dy) {
+            e.preventDefault()
+            setSwipeOffset(dx * 0.4)
+          }
         }}
         onTouchEnd={(e) => {
+          setSwiping(false)
           const dx = touchStartX.current - e.changedTouches[0].clientX
           const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY)
           if (Math.abs(dx) > 60 && Math.abs(dx) > dy) {
-            if (dx > 0) nextMonth()
-            else prevMonth()
+            setSwipeOffset(dx > 0 ? -300 : 300)
+            setTimeout(() => {
+              if (dx > 0) nextMonth()
+              else prevMonth()
+              setSwipeOffset(0)
+            }, 50)
+          } else {
+            setSwipeOffset(0)
           }
         }}
       >

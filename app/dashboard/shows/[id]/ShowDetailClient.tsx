@@ -25,10 +25,11 @@ interface ShowDetailClientProps {
   activity?: any[]
   profile?: Profile | null
   tabMode?: boolean
+  isStaff?: boolean
 }
 
 export function ShowDetailClient({
-  showId, currentStage, userId, show, tasks = [], documents = [], activity = [], profile, tabMode = false
+  showId, currentStage, userId, show, tasks = [], documents = [], activity = [], profile, tabMode = false, isStaff = false
 }: ShowDetailClientProps) {
   const supabase = createClient()
   const router = useRouter()
@@ -67,6 +68,13 @@ export function ShowDetailClient({
   const stageColor = STAGE_COLORS[stage]
 
   if (!tabMode) {
+    if (isStaff) {
+      return (
+        <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full', stageColor.bg, stageColor.text)}>
+          {STAGE_LABELS[stage]}
+        </span>
+      )
+    }
     return (
       <div className="flex items-center gap-2">
         <span className="text-sm text-zinc-500 hidden sm:inline">Stage:</span>

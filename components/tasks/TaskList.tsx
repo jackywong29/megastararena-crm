@@ -61,11 +61,22 @@ export function TaskList({ showId, initialTasks, profile }: TaskListProps) {
     }
   }
 
+  // Permission helpers
+  const canManage = (dept: Department) => {
+    if (profile?.role === 'admin') return true
+    if (profile?.role === 'department_head' && profile.department === dept) return true
+    return false
+  }
+  const canTick = (dept: Department) => {
+    if (profile?.role === 'admin') return true
+    return profile?.department === dept
+  }
+
   const deptsWithTasks = DEPARTMENTS.filter(dept =>
     tasks.some(t => t.department === dept) || addingFor === dept
   )
   const emptyDepts = DEPARTMENTS.filter(dept =>
-    !tasks.some(t => t.department === dept) && addingFor !== dept
+    !tasks.some(t => t.department === dept) && addingFor !== dept && canManage(dept)
   )
 
   const renderDeptBlock = (dept: Department) => {
@@ -85,13 +96,15 @@ export function TaskList({ showId, initialTasks, profile }: TaskListProps) {
             <span className="text-xs text-zinc-500">{done}/{deptTasks.length} done</span>
           )}
           <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={() => setAddingFor(isAdding ? null : dept)}
-              className="text-xs text-[#E7191F] hover:text-red-400 font-medium flex items-center gap-1 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add task
-            </button>
+            {canManage(dept) && (
+              <button
+                onClick={() => setAddingFor(isAdding ? null : dept)}
+                className="text-xs text-[#E7191F] hover:text-red-400 font-medium flex items-center gap-1 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add task
+              </button>
+            )}
             {deptTasks.length > 0 && (
               <button
                 onClick={() => setCollapsed(c => ({ ...c, [dept]: !c[dept] }))}
@@ -137,12 +150,15 @@ export function TaskList({ showId, initialTasks, profile }: TaskListProps) {
                 )}
               >
                 <button
-                  onClick={() => toggleStatus(task)}
+                  onClick={() => canTick(dept) ? toggleStatus(task) : undefined}
+                  disabled={!canTick(dept)}
                   className={cn(
                     'flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
                     task.status === 'done'
                       ? 'bg-emerald-500 border-emerald-500'
-                      : 'border-zinc-600 hover:border-[#E7191F]'
+                      : canTick(dept)
+                        ? 'border-zinc-600 hover:border-[#E7191F]'
+                        : 'border-zinc-800 cursor-not-allowed opacity-40'
                   )}
                 >
                   {task.status === 'done' && <Check className="w-3 h-3 text-white" />}
@@ -158,12 +174,14 @@ export function TaskList({ showId, initialTasks, profile }: TaskListProps) {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-all p-1 rounded"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {canManage(dept) && (
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-all p-1 rounded"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             ))}
           </div>

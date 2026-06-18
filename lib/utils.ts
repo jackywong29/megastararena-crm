@@ -75,6 +75,7 @@ export const DEPARTMENT_LABELS: Record<Department, string> = {
   operations: 'Operations',
   tech:       'Tech',
   sales:      'Sales & Marketing',
+  event:      'Events',
 }
 
 export const DEPARTMENT_COLORS: Record<Department, { bg: string; text: string }> = {
@@ -83,6 +84,7 @@ export const DEPARTMENT_COLORS: Record<Department, { bg: string; text: string }>
   operations: { bg: 'bg-orange-500/20', text: 'text-orange-400' },
   tech:       { bg: 'bg-cyan-500/20',   text: 'text-cyan-400' },
   sales:      { bg: 'bg-pink-500/20',   text: 'text-pink-400' },
+  event:      { bg: 'bg-yellow-500/20', text: 'text-yellow-400' },
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
@@ -103,7 +105,7 @@ export const DOC_CATEGORY_LABELS: Record<DocumentCategory, string> = {
 
 export const STAGE_ORDER: ShowStage[] = ['inquiry', 'confirmed', 'day_of', 'done']
 
-export const DEPARTMENTS: Department[] = ['management', 'finance', 'operations', 'tech', 'sales']
+export const DEPARTMENTS: Department[] = ['management', 'finance', 'operations', 'tech', 'sales', 'event']
 
 export function getInitials(name: string | null, email: string): string {
   if (name) {
