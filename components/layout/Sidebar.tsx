@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle
+  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle, Umbrella
 } from 'lucide-react'
 import { cn, getInitials, DEPARTMENT_LABELS } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/dashboard/shows',    label: 'Shows',       icon: CalendarDays },
   { href: '/dashboard/calendar', label: 'Calendar',    icon: Calendar },
   { href: '/dashboard/tasks',    label: 'My Tasks',    icon: CheckSquare },
+  { href: '/dashboard/leave',    label: 'Leave',       icon: Umbrella },
 ]
 
 const bottomNavItems = [
@@ -51,10 +52,10 @@ export function Sidebar({ profile, unreadCount = 0 }: SidebarProps) {
         <Image
           src="/logo.png"
           alt="MegaStar Arena"
-          width={120}
-          height={40}
+          width={140}
+          height={46}
           className="object-contain"
-          style={{ maxHeight: 40 }}
+          style={{ maxHeight: 46 }}
         />
       </div>
 

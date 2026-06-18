@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MobileNav } from '@/components/layout/MobileNav'
@@ -32,6 +34,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <main className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
         {children}
       </main>
+
+      <Link
+        href="/dashboard/shows/new"
+        className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-[#E7191F] text-white rounded-full flex items-center justify-center shadow-xl hover:bg-[#c41218] transition-all active:scale-95 md:bottom-6 md:right-6"
+        aria-label="New Show"
+      >
+        <Plus className="w-6 h-6" />
+      </Link>
 
       <MobileNav unreadCount={unreadCount ?? 0} />
       <TutorialModal />

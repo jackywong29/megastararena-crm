@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { X, ChevronRight, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -8,32 +9,26 @@ const TUTORIAL_KEY = 'msa_tutorial_done'
 
 const steps = [
   {
-    emoji: '🎪',
-    title: 'Welcome to MegaStar CRM',
+    title: 'Welcome to MegaStar Arena CRM',
     body: 'Your internal platform for managing every show at MegaStar Arena KL. Everything your team needs — from first inquiry to post-show debrief — lives here.',
   },
   {
-    emoji: '🏠',
     title: 'Home Feed',
     body: 'The home screen shows your upcoming shows, live stats, and a team feed where anyone can post updates, announcements, or reminders for the whole team to see.',
   },
   {
-    emoji: '🎭',
     title: 'Shows Pipeline',
     body: 'Every show moves through four stages: Inquiry → Confirmed → Show Day → Past Events. Each stage automatically loads the relevant SOP tasks for your department.',
   },
   {
-    emoji: '📋',
     title: 'Show Details',
     body: 'Click any show to see the full overview, upload documents (tech riders, contracts, invoices), manage tasks, and track all activity on that show.',
   },
   {
-    emoji: '✅',
     title: 'My Tasks',
     body: 'The Tasks section shows all pending tasks assigned to your department across every show, sorted by show date. Tap any task to mark it complete.',
   },
   {
-    emoji: '🎯',
     title: 'Company Hub & Profile',
     body: 'Company Hub stores shared files — SOPs, venue specs, templates. Your Profile lets you set your display name and photo. You\'re all set — let\'s go!',
   },
@@ -91,7 +86,9 @@ export function TutorialModal() {
 
           {/* Content */}
           <div className="text-center space-y-4 mb-8">
-            <div className="text-5xl">{current.emoji}</div>
+            <div className="flex justify-center">
+              <Image src="/logo.png" alt="MegaStar Arena" width={130} height={44} className="object-contain" />
+            </div>
             <h2 className="text-xl font-bold text-white">{current.title}</h2>
             <p className="text-zinc-400 text-sm leading-relaxed">{current.body}</p>
           </div>

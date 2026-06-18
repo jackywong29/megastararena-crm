@@ -61,127 +61,145 @@ export function TaskList({ showId, initialTasks, profile }: TaskListProps) {
     }
   }
 
-  return (
-    <div className="space-y-3">
-      {DEPARTMENTS.map((dept) => {
-        const deptTasks = tasks.filter(t => t.department === dept)
-        const done = deptTasks.filter(t => t.status === 'done').length
-        const isCollapsed = collapsed[dept]
-        const isAdding = addingFor === dept
-        const color = DEPARTMENT_COLORS[dept]
+  const deptsWithTasks = DEPARTMENTS.filter(dept =>
+    tasks.some(t => t.department === dept) || addingFor === dept
+  )
+  const emptyDepts = DEPARTMENTS.filter(dept =>
+    !tasks.some(t => t.department === dept) && addingFor !== dept
+  )
 
-        return (
-          <div key={dept} className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-            {/* Department header */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-zinc-800/40 border-b border-zinc-800">
-              <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-full', color.bg, color.text)}>
-                {DEPARTMENT_LABELS[dept]}
-              </span>
-              {deptTasks.length > 0 && (
-                <span className="text-xs text-zinc-500">
-                  {done}/{deptTasks.length} done
-                </span>
-              )}
-              <div className="ml-auto flex items-center gap-2">
-                <button
-                  onClick={() => setAddingFor(isAdding ? null : dept)}
-                  className="text-xs text-[#E7191F] hover:text-red-400 font-medium flex items-center gap-1 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add task
-                </button>
-                {deptTasks.length > 0 && (
-                  <button
-                    onClick={() => setCollapsed(c => ({ ...c, [dept]: !c[dept] }))}
-                    className="text-zinc-600 hover:text-zinc-400"
-                  >
-                    {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                  </button>
-                )}
-              </div>
-            </div>
+  const renderDeptBlock = (dept: Department) => {
+    const deptTasks = tasks.filter(t => t.department === dept)
+    const done = deptTasks.filter(t => t.status === 'done').length
+    const isCollapsed = collapsed[dept]
+    const isAdding = addingFor === dept
+    const color = DEPARTMENT_COLORS[dept]
 
-            {/* Add task form */}
-            {isAdding && (
-              <div className="px-4 py-3 border-b border-zinc-800 bg-[#E7191F]/5">
-                <div className="flex gap-2">
-                  <Input
-                    value={newTaskTitle}
-                    onChange={e => setNewTaskTitle(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') addTask(dept) }}
-                    placeholder="Task description..."
-                    className="flex-1 text-sm"
-                    autoFocus
-                  />
-                  <Input
-                    type="date"
-                    value={newTaskDue}
-                    onChange={e => setNewTaskDue(e.target.value)}
-                    className="w-36 text-sm"
-                  />
-                  <Button size="sm" onClick={() => addTask(dept)}>Add</Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setAddingFor(null); setNewTaskTitle(''); }}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {/* Task items */}
-            {!isCollapsed && deptTasks.length > 0 && (
-              <div className="divide-y divide-zinc-800/50">
-                {deptTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className={cn(
-                      'flex items-center gap-3 px-4 py-3 group hover:bg-zinc-800/30 transition-colors',
-                      task.status === 'done' && 'opacity-60'
-                    )}
-                  >
-                    <button
-                      onClick={() => toggleStatus(task)}
-                      className={cn(
-                        'flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
-                        task.status === 'done'
-                          ? 'bg-emerald-500 border-emerald-500'
-                          : 'border-zinc-600 hover:border-[#E7191F]'
-                      )}
-                    >
-                      {task.status === 'done' && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <div className="flex-1 min-w-0">
-                      <span className={cn(
-                        'text-sm',
-                        task.status === 'done' ? 'text-zinc-600 line-through' : 'text-zinc-300'
-                      )}>
-                        {task.title}
-                      </span>
-                      {task.due_date && (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3 text-zinc-600" />
-                          <span className="text-xs text-zinc-600">Due {formatDate(task.due_date)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-all p-1 rounded"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!isAdding && deptTasks.length === 0 && (
-              <div className="px-4 py-4 text-xs text-zinc-700 text-center">
-                No tasks yet — click &ldquo;Add task&rdquo; to add one
-              </div>
+    return (
+      <div key={dept} className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 bg-zinc-800/40 border-b border-zinc-800">
+          <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-full', color.bg, color.text)}>
+            {DEPARTMENT_LABELS[dept]}
+          </span>
+          {deptTasks.length > 0 && (
+            <span className="text-xs text-zinc-500">{done}/{deptTasks.length} done</span>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setAddingFor(isAdding ? null : dept)}
+              className="text-xs text-[#E7191F] hover:text-red-400 font-medium flex items-center gap-1 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add task
+            </button>
+            {deptTasks.length > 0 && (
+              <button
+                onClick={() => setCollapsed(c => ({ ...c, [dept]: !c[dept] }))}
+                className="text-zinc-600 hover:text-zinc-400"
+              >
+                {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
             )}
           </div>
-        )
-      })}
+        </div>
+
+        {isAdding && (
+          <div className="px-4 py-3 border-b border-zinc-800 bg-[#E7191F]/5">
+            <div className="flex gap-2">
+              <Input
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addTask(dept) }}
+                placeholder="Task description..."
+                className="flex-1 text-sm"
+                autoFocus
+              />
+              <Input
+                type="date"
+                value={newTaskDue}
+                onChange={e => setNewTaskDue(e.target.value)}
+                className="w-36 text-sm"
+              />
+              <Button size="sm" onClick={() => addTask(dept)}>Add</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setAddingFor(null); setNewTaskTitle(''); }}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {!isCollapsed && deptTasks.length > 0 && (
+          <div className="divide-y divide-zinc-800/50">
+            {deptTasks.map(task => (
+              <div
+                key={task.id}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 group hover:bg-zinc-800/30 transition-colors',
+                  task.status === 'done' && 'opacity-60'
+                )}
+              >
+                <button
+                  onClick={() => toggleStatus(task)}
+                  className={cn(
+                    'flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
+                    task.status === 'done'
+                      ? 'bg-emerald-500 border-emerald-500'
+                      : 'border-zinc-600 hover:border-[#E7191F]'
+                  )}
+                >
+                  {task.status === 'done' && <Check className="w-3 h-3 text-white" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <span className={cn('text-sm', task.status === 'done' ? 'text-zinc-600 line-through' : 'text-zinc-300')}>
+                    {task.title}
+                  </span>
+                  {task.due_date && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3 text-zinc-600" />
+                      <span className="text-xs text-zinc-600">Due {formatDate(task.due_date)}</span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-all p-1 rounded"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isAdding && deptTasks.length === 0 && (
+          <div className="px-4 py-3 text-xs text-zinc-700 text-center">
+            No tasks yet
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {deptsWithTasks.map(renderDeptBlock)}
+
+      {emptyDepts.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {emptyDepts.map(dept => {
+            return (
+              <button
+                key={dept}
+                onClick={() => setAddingFor(dept)}
+                className={cn(
+                  'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-zinc-800 text-zinc-600 hover:border-zinc-600 hover:text-zinc-400 transition-colors'
+                )}
+              >
+                <Plus className="w-3 h-3" />
+                {DEPARTMENT_LABELS[dept]}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

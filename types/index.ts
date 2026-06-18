@@ -5,6 +5,8 @@ export type EventType = 'concert' | 'corporate' | 'private_function' | 'other'
 export type TaskStatus = 'pending' | 'in_progress' | 'done'
 export type DocumentCategory = 'tech_rider' | 'venue_spec' | 'contract' | 'quotation' | 'invoice' | 'site_visit' | 'other'
 export type NotificationType = 'show_update' | 'task_assigned' | 'document_uploaded' | 'stage_change'
+export type LeaveType = 'annual' | 'medical' | 'emergency'
+export type LeaveStatus = 'pending' | 'approved' | 'rejected'
 
 export interface Profile {
   id: string
@@ -13,6 +15,7 @@ export interface Profile {
   avatar_url: string | null
   department: Department | null
   role: UserRole | null
+  can_approve_leave?: boolean
   created_at: string
   updated_at: string
 }
@@ -107,4 +110,22 @@ export interface CompanyFile {
   uploaded_by: string | null
   created_at: string
   profiles?: Profile
+}
+
+export interface LeaveApplication {
+  id: string
+  user_id: string
+  leave_type: LeaveType
+  start_date: string
+  end_date: string
+  days: number
+  reason: string | null
+  status: LeaveStatus
+  reviewed_by: string | null
+  reviewed_at: string | null
+  review_note: string | null
+  created_at: string
+  updated_at: string
+  profiles?: Profile | null
+  reviewer?: Profile | null
 }

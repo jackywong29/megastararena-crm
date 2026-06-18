@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CalendarDays, Bell, CheckSquare, Calendar } from 'lucide-react'
+import { Home, CalendarDays, Bell, CheckSquare, Calendar, Umbrella } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const items = [
@@ -10,6 +10,7 @@ const items = [
   { href: '/dashboard/shows',         label: 'Shows',    icon: CalendarDays },
   { href: '/dashboard/calendar',      label: 'Calendar', icon: Calendar },
   { href: '/dashboard/tasks',         label: 'Tasks',    icon: CheckSquare },
+  { href: '/dashboard/leave',         label: 'Leave',    icon: Umbrella },
   { href: '/dashboard/notifications', label: 'Alerts',   icon: Bell },
 ]
 
@@ -27,7 +28,7 @@ export function MobileNav({ unreadCount = 0 }: { unreadCount?: number }) {
             key={href}
             href={href}
             className={cn(
-              'flex-1 flex flex-col items-center justify-center py-3 gap-1 text-[10px] font-medium transition-colors relative',
+              'flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-[9px] font-medium transition-colors relative',
               active ? 'text-[#E7191F]' : 'text-zinc-600'
             )}
           >

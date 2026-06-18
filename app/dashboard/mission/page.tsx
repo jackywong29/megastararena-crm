@@ -77,16 +77,12 @@ export default async function MissionPage() {
             <div className="w-1 h-8 bg-[#E7191F] rounded-full" />
             <h2 className="text-xl font-bold text-white">Our Values</h2>
           </div>
-          <div className="grid grid-cols-1 gap-4 pl-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pl-4">
             {values.map((v, i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
-                <div className="flex items-start gap-4">
-                  <span className="text-[#E7191F] font-black text-lg tracking-widest flex-shrink-0 mt-0.5">{v.word}</span>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1.5">{v.title}</h3>
-                    <p className="text-zinc-500 text-sm leading-relaxed">{v.body}</p>
-                  </div>
-                </div>
+              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition-colors text-center">
+                <div className="text-[#E7191F] font-black text-2xl tracking-widest mb-3">{v.word}</div>
+                <h3 className="font-semibold text-white mb-3">{v.title}</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed">{v.body}</p>
               </div>
             ))}
           </div>
