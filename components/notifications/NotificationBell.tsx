@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { timeAgo } from '@/lib/utils'
 import type { Notification } from '@/types'
@@ -51,6 +52,13 @@ export function NotificationList({ initialNotifications, userId }: NotificationL
     new_post: '📣',
   }
 
+  const getHref = (n: Notification): string | null => {
+    if (n.related_show_id) return `/dashboard/shows/${n.related_show_id}`
+    if (n.type === 'leave_update') return '/dashboard/leave'
+    if (n.type === 'new_post') return '/dashboard'
+    return null
+  }
+
   return (
     <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
@@ -75,25 +83,35 @@ export function NotificationList({ initialNotifications, userId }: NotificationL
         </div>
       ) : (
         <div className="divide-y divide-zinc-800/50">
-          {notifications.map(n => (
-            <div
-              key={n.id}
-              onClick={() => markRead(n.id)}
-              className={`flex items-start gap-3 px-5 py-4 cursor-pointer hover:bg-zinc-800/40 transition-colors ${!n.read ? 'bg-[#E7191F]/5' : ''}`}
-            >
-              <span className="text-xl flex-shrink-0 mt-0.5">{iconMap[n.type] ?? '🔔'}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <p className={`text-sm ${!n.read ? 'font-semibold text-white' : 'text-zinc-400'}`}>
-                    {n.title}
-                  </p>
-                  {!n.read && <span className="w-2 h-2 rounded-full bg-[#E7191F] flex-shrink-0 mt-1.5" />}
+          {notifications.map(n => {
+            const href = getHref(n)
+            const rowClass = `flex items-start gap-3 px-5 py-4 cursor-pointer hover:bg-zinc-800/40 transition-colors ${!n.read ? 'bg-[#E7191F]/5' : ''}`
+            const inner = (
+              <>
+                <span className="text-xl flex-shrink-0 mt-0.5">{iconMap[n.type] ?? '🔔'}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`text-sm ${!n.read ? 'font-semibold text-white' : 'text-zinc-400'}`}>
+                      {n.title}
+                    </p>
+                    {!n.read && <span className="w-2 h-2 rounded-full bg-[#E7191F] flex-shrink-0 mt-1.5" />}
+                  </div>
+                  <p className="text-xs text-zinc-600 mt-0.5 leading-relaxed">{n.message}</p>
+                  <p className="text-xs text-zinc-700 mt-1">{timeAgo(n.created_at)}</p>
                 </div>
-                <p className="text-xs text-zinc-600 mt-0.5 leading-relaxed">{n.message}</p>
-                <p className="text-xs text-zinc-700 mt-1">{timeAgo(n.created_at)}</p>
+              </>
+            )
+
+            return href ? (
+              <Link key={n.id} href={href} onClick={() => markRead(n.id)} className={rowClass}>
+                {inner}
+              </Link>
+            ) : (
+              <div key={n.id} onClick={() => markRead(n.id)} className={rowClass}>
+                {inner}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
