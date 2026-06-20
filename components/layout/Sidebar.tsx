@@ -92,13 +92,13 @@ export function Sidebar({ profile, unreadCount = 0 }: SidebarProps) {
               : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
           )}
         >
-          <Bell className="w-4 h-4 flex-shrink-0" />
+          <span className="relative flex-shrink-0">
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#E7191F] ring-2 ring-black" />
+            )}
+          </span>
           Notifications
-          {unreadCount > 0 && (
-            <span className="ml-auto bg-[#E7191F] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
         </Link>
 
         <div className="border-t border-zinc-900 my-2" />
