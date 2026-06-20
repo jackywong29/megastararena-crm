@@ -158,14 +158,20 @@ export function ShowDetailClient({
               <div className="flex items-center gap-2.5 text-sm">
                 <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                 <span className="text-zinc-600 text-xs w-20">Setup</span>
-                <span className="text-zinc-300">{formatTime(show.setup_time)}</span>
+                <span className="text-zinc-300">
+                  {show.setup_date && show.setup_date !== show.show_date && `${formatDate(show.setup_date)} · `}
+                  {formatTime(show.setup_time)}
+                </span>
               </div>
             )}
             {show.rehearsal_time && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                 <span className="text-zinc-600 text-xs w-20">Rehearsal</span>
-                <span className="text-zinc-300">{formatTime(show.rehearsal_time)}</span>
+                <span className="text-zinc-300">
+                  {show.rehearsal_date && show.rehearsal_date !== show.show_date && `${formatDate(show.rehearsal_date)} · `}
+                  {formatTime(show.rehearsal_time)}
+                </span>
               </div>
             )}
             {show.show_time && (
@@ -179,7 +185,10 @@ export function ShowDetailClient({
               <div className="flex items-center gap-2.5 text-sm">
                 <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                 <span className="text-zinc-600 text-xs w-20">Dismantle</span>
-                <span className="text-zinc-300">{formatTime(show.teardown_time)}</span>
+                <span className="text-zinc-300">
+                  {show.teardown_date && show.teardown_date !== show.show_date && `${formatDate(show.teardown_date)} · `}
+                  {formatTime(show.teardown_time)}
+                </span>
               </div>
             )}
             {show.expected_attendance && (

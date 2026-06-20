@@ -39,9 +39,12 @@ export interface Show {
   event_type: EventType
   stage: ShowStage
   show_date: string | null
+  setup_date: string | null
   setup_time: string | null
+  rehearsal_date: string | null
   rehearsal_time: string | null
   show_time: string | null
+  teardown_date: string | null
   teardown_time: string | null
   expected_attendance: number | null
   notes: string | null
