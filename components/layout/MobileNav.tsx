@@ -45,7 +45,7 @@ export function MobileNav({ unreadCount = 0, isAdmin = false }: { unreadCount?: 
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-zinc-900 flex md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-zinc-900 flex md:hidden pb-[env(safe-area-inset-bottom)]">
         {mainItems.map(({ href, label, icon: Icon }) => {
           const active = href === '/dashboard'
             ? pathname === href
@@ -94,7 +94,7 @@ export function MobileNav({ unreadCount = 0, isAdmin = false }: { unreadCount?: 
             onClick={() => setMoreOpen(false)}
           />
           {/* Sheet */}
-          <div className="relative bg-zinc-950 border-t border-zinc-800 rounded-t-2xl pb-10 shadow-2xl">
+          <div className="relative bg-zinc-950 border-t border-zinc-800 rounded-t-2xl pb-[calc(2.5rem+env(safe-area-inset-bottom))] shadow-2xl">
             {/* Handle */}
             <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-2" />
 
