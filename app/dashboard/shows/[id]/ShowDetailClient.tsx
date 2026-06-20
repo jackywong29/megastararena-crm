@@ -9,9 +9,8 @@ import { TaskList } from '@/components/tasks/TaskList'
 import { DocumentList } from '@/components/documents/DocumentList'
 import {
   formatDate, formatTime, STAGE_LABELS, STAGE_COLORS,
-  timeAgo, cn, STAGE_SOP_TASKS
+  timeAgo, cn, canViewInternalNotes
 } from '@/lib/utils'
-import type { Department } from '@/types'
 import { FileText, CheckSquare, Info, Activity, Phone, Mail, User, Users, Clock, Calendar, Lock } from 'lucide-react'
 import type { Show, Task, Document as Doc, Profile, ShowStage, ActivityLog } from '@/types'
 
@@ -47,21 +46,6 @@ export function ShowDetailClient({
       details: { from: prevStage, to: newStage },
     })
 
-    // Insert SOP tasks for the new stage
-    const stageTasks = STAGE_SOP_TASKS[newStage] ?? {}
-    const sopInserts = Object.entries(stageTasks).flatMap(([dept, titles]) =>
-      (titles as string[]).map(title => ({
-        show_id: showId,
-        title,
-        department: dept as Department,
-        status: 'pending' as const,
-        created_by: userId,
-      }))
-    )
-    if (sopInserts.length > 0) {
-      await supabase.from('tasks').insert(sopInserts)
-    }
-
     router.refresh()
   }
 
@@ -85,7 +69,6 @@ export function ShowDetailClient({
           <SelectContent>
             <SelectItem value="inquiry">🟡 Inquiry</SelectItem>
             <SelectItem value="confirmed">🔵 Confirmed</SelectItem>
-            <SelectItem value="day_of">🟢 Show Day</SelectItem>
             <SelectItem value="done">⚫ Past Events</SelectItem>
           </SelectContent>
         </Select>
@@ -152,21 +135,28 @@ export function ShowDetailClient({
             {show.setup_time && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-16">Setup</span>
+                <span className="text-zinc-600 text-xs w-20">Setup</span>
                 <span className="text-zinc-300">{formatTime(show.setup_time)}</span>
+              </div>
+            )}
+            {show.rehearsal_time && (
+              <div className="flex items-center gap-2.5 text-sm">
+                <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                <span className="text-zinc-600 text-xs w-20">Rehearsal</span>
+                <span className="text-zinc-300">{formatTime(show.rehearsal_time)}</span>
               </div>
             )}
             {show.show_time && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-16">Show</span>
+                <span className="text-zinc-600 text-xs w-20">Show</span>
                 <span className="text-zinc-300">{formatTime(show.show_time)}</span>
               </div>
             )}
             {show.teardown_time && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-16">Teardown</span>
+                <span className="text-zinc-600 text-xs w-20">Dismantle</span>
                 <span className="text-zinc-300">{formatTime(show.teardown_time)}</span>
               </div>
             )}
@@ -185,7 +175,7 @@ export function ShowDetailClient({
             </div>
           )}
 
-          {show.internal_notes && (
+          {show.internal_notes && canViewInternalNotes(profile ?? null) && (
             <div className="bg-[#E7191F]/5 rounded-xl border border-[#E7191F]/20 p-5">
               <h3 className="font-semibold text-[#E7191F] text-sm mb-2 flex items-center gap-2">
                 <Lock className="w-3.5 h-3.5" /> Internal Notes

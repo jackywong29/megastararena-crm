@@ -6,7 +6,7 @@ import { PostsFeed } from '@/components/home/PostsFeed'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CalendarDays, CheckSquare, TrendingUp, Star, Plus } from 'lucide-react'
-import { formatDate, STAGE_LABELS, STAGE_COLORS, EVENT_TYPE_LABELS, EVENT_TYPE_COLORS } from '@/lib/utils'
+import { STAGE_LABELS, STAGE_COLORS, EVENT_TYPE_COLORS, canAddShows } from '@/lib/utils'
 import type { Profile, Post } from '@/types'
 
 export default async function DashboardPage() {
@@ -22,7 +22,11 @@ export default async function DashboardPage() {
   const { count: pendingTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done')
   const { count: inquiries } = await supabase.from('shows').select('*', { count: 'exact', head: true }).eq('stage', 'inquiry')
 
-  const { data: posts } = await supabase
+  // Try the enriched query (reactions + comments). If those tables don't
+  // exist yet (migration not run), fall back to a plain posts query so the
+  // feed never breaks.
+  let posts: Post[] | null = null
+  const enriched = await supabase
     .from('posts')
     .select(`
       *,
@@ -32,6 +36,17 @@ export default async function DashboardPage() {
     `)
     .order('created_at', { ascending: false })
     .limit(30)
+
+  if (enriched.error) {
+    const basic = await supabase
+      .from('posts')
+      .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
+      .order('created_at', { ascending: false })
+      .limit(30)
+    posts = (basic.data ?? []) as Post[]
+  } else {
+    posts = (enriched.data ?? []) as Post[]
+  }
 
   const { data: upcomingShows } = await supabase
     .from('shows')
@@ -47,12 +62,14 @@ export default async function DashboardPage() {
   return (
     <>
       <Header title="Home" profile={p} unreadCount={unreadCount ?? 0} actions={
-        <Link href="/dashboard/shows/new">
-          <Button size="sm" className="gap-1.5">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Show</span>
-          </Button>
-        </Link>
+        canAddShows(p) ? (
+          <Link href="/dashboard/shows/new">
+            <Button size="sm" className="gap-1.5">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Show</span>
+            </Button>
+          </Link>
+        ) : undefined
       } />
 
       <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto w-full">

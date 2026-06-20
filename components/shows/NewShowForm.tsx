@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { STAGE_SOP_TASKS } from '@/lib/utils'
-import type { EventType, ShowStage, Department } from '@/types'
+import type { EventType, ShowStage } from '@/types'
 
 export function NewShowForm() {
   const router = useRouter()
@@ -27,6 +26,7 @@ export function NewShowForm() {
     stage: 'inquiry' as ShowStage,
     show_date: '',
     setup_time: '',
+    rehearsal_time: '',
     show_time: '',
     teardown_time: '',
     expected_attendance: '',
@@ -59,6 +59,7 @@ export function NewShowForm() {
         stage: form.stage,
         show_date: form.show_date || null,
         setup_time: form.setup_time || null,
+        rehearsal_time: form.rehearsal_time || null,
         show_time: form.show_time || null,
         teardown_time: form.teardown_time || null,
         expected_attendance: form.expected_attendance ? parseInt(form.expected_attendance) : null,
@@ -76,22 +77,6 @@ export function NewShowForm() {
     }
 
     if (data) {
-      // Auto-create SOP tasks for the initial stage only
-      const stageTasks = STAGE_SOP_TASKS[form.stage as keyof typeof STAGE_SOP_TASKS] ?? {}
-      const sopInserts = Object.entries(stageTasks).flatMap(([dept, titles]) =>
-        (titles as string[]).map(title => ({
-          show_id: data.id,
-          title,
-          department: dept as Department,
-          status: 'pending' as const,
-          created_by: user?.id ?? null,
-        }))
-      )
-
-      if (sopInserts.length > 0) {
-        await supabase.from('tasks').insert(sopInserts)
-      }
-
       await supabase.from('activity_log').insert({
         show_id: data.id,
         user_id: user?.id ?? null,
@@ -144,7 +129,6 @@ export function NewShowForm() {
               <SelectContent>
                 <SelectItem value="inquiry">Inquiry</SelectItem>
                 <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="day_of">Show Day</SelectItem>
                 <SelectItem value="done">Past Events</SelectItem>
               </SelectContent>
             </Select>
@@ -154,10 +138,6 @@ export function NewShowForm() {
         <div className="space-y-1.5">
           <Label htmlFor="expected_attendance">Expected Attendance</Label>
           <Input id="expected_attendance" type="number" value={form.expected_attendance} onChange={e => set('expected_attendance', e.target.value)} placeholder="e.g. 5000" />
-        </div>
-
-        <div className="bg-zinc-800/50 rounded-lg px-4 py-3 text-xs text-zinc-500 border border-zinc-700">
-          SOP tasks for the initial stage will be auto-created. More tasks unlock as the show progresses through stages.
         </div>
       </div>
 
@@ -196,17 +176,21 @@ export function NewShowForm() {
           <Input id="show_date" type="date" value={form.show_date} onChange={e => set('show_date', e.target.value)} />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="setup_time">Setup Time</Label>
+            <Label htmlFor="setup_time">Setup</Label>
             <Input id="setup_time" type="time" value={form.setup_time} onChange={e => set('setup_time', e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="show_time">Show Time</Label>
+            <Label htmlFor="rehearsal_time">Rehearsal</Label>
+            <Input id="rehearsal_time" type="time" value={form.rehearsal_time} onChange={e => set('rehearsal_time', e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="show_time">Show</Label>
             <Input id="show_time" type="time" value={form.show_time} onChange={e => set('show_time', e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="teardown_time">Teardown</Label>
+            <Label htmlFor="teardown_time">Dismantle</Label>
             <Input id="teardown_time" type="time" value={form.teardown_time} onChange={e => set('teardown_time', e.target.value)} />
           </div>
         </div>

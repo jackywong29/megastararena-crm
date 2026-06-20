@@ -37,6 +37,7 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
     stage: show.stage as ShowStage,
     show_date: show.show_date ?? '',
     setup_time: show.setup_time ?? '',
+    rehearsal_time: show.rehearsal_time ?? '',
     show_time: show.show_time ?? '',
     teardown_time: show.teardown_time ?? '',
     expected_attendance: show.expected_attendance?.toString() ?? '',
@@ -66,6 +67,7 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
       stage: form.stage,
       show_date: form.show_date || null,
       setup_time: form.setup_time || null,
+      rehearsal_time: form.rehearsal_time || null,
       show_time: form.show_time || null,
       teardown_time: form.teardown_time || null,
       expected_attendance: form.expected_attendance ? parseInt(form.expected_attendance) : null,
@@ -132,7 +134,6 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
                     <SelectContent>
                       <SelectItem value="inquiry">Inquiry</SelectItem>
                       <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="day_of">Show Day</SelectItem>
                       <SelectItem value="done">Past Events</SelectItem>
                     </SelectContent>
                   </Select>
@@ -172,17 +173,21 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
                 <Label>Show Date</Label>
                 <Input type="date" value={form.show_date} onChange={e => set('show_date', e.target.value)} />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className={fieldClass}>
                   <Label>Setup</Label>
                   <Input type="time" value={form.setup_time} onChange={e => set('setup_time', e.target.value)} />
+                </div>
+                <div className={fieldClass}>
+                  <Label>Rehearsal</Label>
+                  <Input type="time" value={form.rehearsal_time} onChange={e => set('rehearsal_time', e.target.value)} />
                 </div>
                 <div className={fieldClass}>
                   <Label>Show</Label>
                   <Input type="time" value={form.show_time} onChange={e => set('show_time', e.target.value)} />
                 </div>
                 <div className={fieldClass}>
-                  <Label>Teardown</Label>
+                  <Label>Dismantle</Label>
                   <Input type="time" value={form.teardown_time} onChange={e => set('teardown_time', e.target.value)} />
                 </div>
               </div>

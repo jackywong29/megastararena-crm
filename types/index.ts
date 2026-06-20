@@ -16,8 +16,17 @@ export interface Profile {
   department: Department | null
   role: UserRole | null
   can_approve_leave?: boolean
+  is_active?: boolean
   created_at: string
   updated_at: string
+}
+
+export interface AllowedEmail {
+  email: string
+  full_name: string | null
+  department: Department | null
+  role: UserRole | null
+  created_at: string
 }
 
 export interface Show {
@@ -31,6 +40,7 @@ export interface Show {
   stage: ShowStage
   show_date: string | null
   setup_time: string | null
+  rehearsal_time: string | null
   show_time: string | null
   teardown_time: string | null
   expected_attendance: number | null

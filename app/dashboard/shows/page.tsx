@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header'
 import { PipelineBoard } from '@/components/shows/PipelineBoard'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { canAddShows } from '@/lib/utils'
 import type { Profile } from '@/types'
 
 export default async function ShowsPage() {
@@ -26,24 +27,29 @@ export default async function ShowsPage() {
     .from('tasks')
     .select('*')
 
+  const p = profile as Profile | null
+  const allowAddShows = canAddShows(p)
+
   return (
     <>
       <Header
         title="Shows"
-        profile={profile as Profile | null}
+        profile={p}
         unreadCount={unreadCount ?? 0}
         actions={
-          <Link href="/dashboard/shows/new">
-            <Button size="sm" className="gap-1.5">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Show</span>
-            </Button>
-          </Link>
+          allowAddShows ? (
+            <Link href="/dashboard/shows/new">
+              <Button size="sm" className="gap-1.5">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New Show</span>
+              </Button>
+            </Link>
+          ) : undefined
         }
       />
 
       <div className="p-4 md:p-6">
-        <PipelineBoard shows={shows ?? []} tasks={tasks ?? []} />
+        <PipelineBoard shows={shows ?? []} tasks={tasks ?? []} canAddShows={allowAddShows} />
       </div>
     </>
   )

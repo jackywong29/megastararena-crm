@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle, Umbrella
+  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle, Umbrella, Users
 } from 'lucide-react'
 import { cn, getInitials, DEPARTMENT_LABELS } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -44,6 +44,8 @@ export function Sidebar({ profile, unreadCount = 0 }: SidebarProps) {
     href === '/dashboard'
       ? pathname === href
       : pathname === href || pathname.startsWith(href + '/')
+
+  const isAdmin = profile?.role === 'admin'
 
   return (
     <aside className="w-60 flex-shrink-0 flex flex-col bg-black min-h-screen border-r border-zinc-900">
@@ -119,6 +121,22 @@ export function Sidebar({ profile, unreadCount = 0 }: SidebarProps) {
             </Link>
           )
         })}
+
+        {/* Staff management — admin only */}
+        {isAdmin && (
+          <Link
+            href="/dashboard/staff"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              isActive('/dashboard/staff')
+                ? 'bg-[#E7191F] text-white'
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+            )}
+          >
+            <Users className="w-4 h-4 flex-shrink-0" />
+            Staff
+          </Link>
+        )}
       </nav>
 
       {/* User */}

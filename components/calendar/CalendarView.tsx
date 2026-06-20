@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn, EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/utils'
@@ -13,6 +13,8 @@ interface CalendarViewProps {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 const LEGEND_COLORS: Record<string, string> = {
   concert: '#E7191F',
@@ -27,10 +29,23 @@ export function CalendarView({ shows }: CalendarViewProps) {
   const [month, setMonth] = useState(today.getMonth())
   const [selected, setSelected] = useState<Show[] | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const touchStartX = useRef<number>(0)
-  const touchStartY = useRef<number>(0)
-  const [swipeOffset, setSwipeOffset] = useState(0)
-  const [swiping, setSwiping] = useState(false)
+  const stripRef = useRef<HTMLDivElement>(null)
+  const activeTabRef = useRef<HTMLButtonElement>(null)
+
+  // Rolling window of months: 6 before → 18 after today
+  const monthTabs: { year: number; month: number }[] = []
+  {
+    const start = new Date(today.getFullYear(), today.getMonth() - 6, 1)
+    for (let i = 0; i < 25; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth() + i, 1)
+      monthTabs.push({ year: d.getFullYear(), month: d.getMonth() })
+    }
+  }
+
+  // Keep the selected month chip scrolled into view
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [year, month])
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
@@ -41,8 +56,8 @@ export function CalendarView({ shows }: CalendarViewProps) {
     else setMonth(m => m + 1)
   }
 
-  // Monday-first: Mon=0, Tue=1, ..., Sun=6
-  const rawFirstDay = new Date(year, month, 1).getDay() // 0=Sun, 1=Mon...
+  // Monday-first: Mon=0 … Sun=6
+  const rawFirstDay = new Date(year, month, 1).getDay()
   const firstDay = rawFirstDay === 0 ? 6 : rawFirstDay - 1
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
@@ -94,42 +109,39 @@ export function CalendarView({ shows }: CalendarViewProps) {
         </div>
       </div>
 
-      {/* Calendar grid */}
+      {/* Scrollable month tabs */}
       <div
-        className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden"
-        style={{
-          transform: `translateX(${swipeOffset}px)`,
-          transition: swiping ? 'none' : 'transform 0.25s ease',
-        }}
-        onTouchStart={(e) => {
-          touchStartX.current = e.touches[0].clientX
-          touchStartY.current = e.touches[0].clientY
-          setSwiping(true)
-        }}
-        onTouchMove={(e) => {
-          const dx = e.touches[0].clientX - touchStartX.current
-          const dy = Math.abs(e.touches[0].clientY - touchStartY.current)
-          if (Math.abs(dx) > dy) {
-            e.preventDefault()
-            setSwipeOffset(dx * 0.4)
-          }
-        }}
-        onTouchEnd={(e) => {
-          setSwiping(false)
-          const dx = touchStartX.current - e.changedTouches[0].clientX
-          const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY)
-          if (Math.abs(dx) > 60 && Math.abs(dx) > dy) {
-            setSwipeOffset(dx > 0 ? -300 : 300)
-            setTimeout(() => {
-              if (dx > 0) nextMonth()
-              else prevMonth()
-              setSwipeOffset(0)
-            }, 50)
-          } else {
-            setSwipeOffset(0)
-          }
-        }}
+        ref={stripRef}
+        className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide"
+        style={{ scrollbarWidth: 'none' }}
       >
+        <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
+        {monthTabs.map(({ year: ty, month: tm }) => {
+          const active = ty === year && tm === month
+          const isCurrent = ty === today.getFullYear() && tm === today.getMonth()
+          const showYear = tm === 0 || (monthTabs[0].year === ty && monthTabs[0].month === tm)
+          return (
+            <button
+              key={`${ty}-${tm}`}
+              ref={active ? activeTabRef : undefined}
+              onClick={() => { setYear(ty); setMonth(tm) }}
+              className={cn(
+                'flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                active
+                  ? 'bg-[#E7191F] text-white'
+                  : isCurrent
+                    ? 'bg-zinc-800 text-white ring-1 ring-[#E7191F]/40'
+                    : 'bg-zinc-900 text-zinc-500 hover:text-white hover:bg-zinc-800'
+              )}
+            >
+              {MONTHS_SHORT[tm]}{showYear ? ` ’${String(ty).slice(2)}` : ''}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
         {/* Weekday headers */}
         <div className="grid grid-cols-7 border-b border-zinc-800">
           {WEEKDAYS.map(day => (
@@ -200,25 +212,22 @@ export function CalendarView({ shows }: CalendarViewProps) {
             {selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}
           </h3>
           <div className="space-y-2">
-            {selected.map(show => {
-              const c = EVENT_TYPE_COLORS[show.event_type]
-              return (
-                <Link
-                  key={show.id}
-                  href={`/dashboard/shows/${show.id}`}
-                  className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors group"
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: LEGEND_COLORS[show.event_type] ?? '#a1a1aa' }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-white group-hover:text-[#E7191F] transition-colors truncate">{show.title}</div>
-                    <div className="text-xs text-zinc-500">{show.client_name} · {EVENT_TYPE_LABELS[show.event_type]}</div>
-                  </div>
-                </Link>
-              )
-            })}
+            {selected.map(show => (
+              <Link
+                key={show.id}
+                href={`/dashboard/shows/${show.id}`}
+                className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors group"
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: LEGEND_COLORS[show.event_type] ?? '#a1a1aa' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm text-white group-hover:text-[#E7191F] transition-colors truncate">{show.title}</div>
+                  <div className="text-xs text-zinc-500">{show.client_name} · {EVENT_TYPE_LABELS[show.event_type]}</div>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       )}
