@@ -90,7 +90,7 @@ export default async function MissionPage() {
 
         {/* Footer */}
         <div className="text-center py-6 border-t border-zinc-800">
-          <p className="text-zinc-700 text-xs">MegaStar Arena Sdn Bhd · Kuala Lumpur, Malaysia</p>
+          <p className="text-zinc-700 text-xs">MegaStar Arena KL Sdn Bhd · Kuala Lumpur, Malaysia</p>
         </div>
       </div>
     </>

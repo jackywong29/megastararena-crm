@@ -58,6 +58,25 @@ export function TaskList({ showId, initialTasks, profile }: TaskListProps) {
         action: 'added_task',
         details: { title: data.title, department: dept },
       })
+
+      const { data: showInfo } = await supabase.from('shows').select('title').eq('id', showId).single()
+      const { data: recipients } = await supabase
+        .from('profiles')
+        .select('id, is_active')
+        .eq('department', dept)
+        .neq('id', user?.id ?? '')
+      const activeRecipients = (recipients ?? []).filter(r => r.is_active !== false)
+      if (activeRecipients.length > 0) {
+        await supabase.from('notifications').insert(
+          activeRecipients.map(r => ({
+            user_id: r.id,
+            title: `New task: ${data.title}`,
+            message: showInfo ? `On "${showInfo.title}"` : 'A new task was added',
+            type: 'task_assigned' as const,
+            related_show_id: showId,
+          }))
+        )
+      }
     }
   }
 

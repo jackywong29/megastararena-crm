@@ -94,7 +94,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-zinc-700 text-xs mt-6">
-          © 2026 MegaStar Arena Sdn Bhd
+          © 2026 MegaStar Arena KL Sdn Bhd
         </p>
       </div>
     </div>

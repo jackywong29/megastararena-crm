@@ -66,6 +66,23 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
     if (data) {
       setPosts(p => [data as Post, ...p])
       setNewContent('')
+
+      const { data: recipients } = await supabase
+        .from('profiles')
+        .select('id, is_active')
+        .neq('id', currentProfile.id)
+      const activeRecipients = (recipients ?? []).filter(r => r.is_active !== false)
+      if (activeRecipients.length > 0) {
+        const authorName = currentProfile.full_name ?? currentProfile.email
+        await supabase.from('notifications').insert(
+          activeRecipients.map(r => ({
+            user_id: r.id,
+            title: `${authorName} posted an update`,
+            message: newContent.trim().slice(0, 100),
+            type: 'new_post' as const,
+          }))
+        )
+      }
     }
     setSubmitting(false)
   }

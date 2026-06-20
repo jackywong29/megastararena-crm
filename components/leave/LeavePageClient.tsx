@@ -99,6 +99,24 @@ export function LeavePageClient({ profile, initialLeaves, allLeaves: initAllLeav
     if (data && !error) {
       setLeaves(ls => [data as LeaveApplication, ...ls])
       if (isManager) setAllLeaves(ls => [data as LeaveApplication, ...ls])
+
+      const { data: approvers } = await supabase
+        .from('profiles')
+        .select('id, is_active')
+        .or('role.eq.admin,can_approve_leave.eq.true')
+        .neq('id', profile.id)
+      const activeApprovers = (approvers ?? []).filter(a => a.is_active !== false)
+      if (activeApprovers.length > 0) {
+        const applicantName = profile.full_name ?? profile.email
+        await supabase.from('notifications').insert(
+          activeApprovers.map(a => ({
+            user_id: a.id,
+            title: `New leave request from ${applicantName}`,
+            message: `${LEAVE_LABELS[form.leave_type]} · ${formatDate(form.start_date)} – ${formatDate(form.end_date)} (${days} day${days !== 1 ? 's' : ''})`,
+            type: 'leave_update' as const,
+          }))
+        )
+      }
     }
     setForm({ leave_type: 'annual', start_date: '', end_date: '', reason: '' })
     setShowForm(false)
@@ -123,6 +141,14 @@ export function LeavePageClient({ profile, initialLeaves, allLeaves: initAllLeav
     if (data) {
       setAllLeaves(ls => ls.map(l => l.id === id ? data as LeaveApplication : l))
       setLeaves(ls => ls.map(l => l.id === id ? data as LeaveApplication : l))
+
+      const leaveData = data as LeaveApplication
+      await supabase.from('notifications').insert({
+        user_id: leaveData.user_id,
+        title: status === 'approved' ? 'Leave approved' : 'Leave declined',
+        message: `${LEAVE_LABELS[leaveData.leave_type]} · ${formatDate(leaveData.start_date)} – ${formatDate(leaveData.end_date)}${note ? ` — ${note}` : ''}`,
+        type: 'leave_update' as const,
+      })
     }
   }
 

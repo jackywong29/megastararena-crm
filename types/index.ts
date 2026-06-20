@@ -4,7 +4,7 @@ export type ShowStage = 'inquiry' | 'confirmed' | 'day_of' | 'done'
 export type EventType = 'concert' | 'corporate' | 'private_function' | 'other'
 export type TaskStatus = 'pending' | 'in_progress' | 'done'
 export type DocumentCategory = 'tech_rider' | 'venue_spec' | 'contract' | 'quotation' | 'invoice' | 'site_visit' | 'other'
-export type NotificationType = 'show_update' | 'task_assigned' | 'document_uploaded' | 'stage_change'
+export type NotificationType = 'show_update' | 'task_assigned' | 'document_uploaded' | 'stage_change' | 'leave_update' | 'new_post'
 export type LeaveType = 'annual' | 'medical' | 'emergency'
 export type LeaveStatus = 'pending' | 'approved' | 'rejected'
 
@@ -142,6 +142,13 @@ export interface CompanyFile {
   uploaded_by: string | null
   created_at: string
   profiles?: Profile
+}
+
+export interface PublicHoliday {
+  id: string
+  date: string
+  name: string
+  created_at: string
 }
 
 export interface LeaveApplication {

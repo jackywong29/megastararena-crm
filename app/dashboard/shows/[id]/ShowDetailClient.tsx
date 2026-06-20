@@ -46,6 +46,28 @@ export function ShowDetailClient({
       details: { from: prevStage, to: newStage },
     })
 
+    if (newStage === 'confirmed') {
+      const { data: showInfo } = await supabase.from('shows').select('title, client_name, show_date').eq('id', showId).single()
+      const { data: recipients } = await supabase
+        .from('profiles')
+        .select('id, is_active')
+        .in('role', ['admin', 'department_head'])
+        .neq('id', userId)
+      const activeRecipients = (recipients ?? []).filter(r => r.is_active !== false)
+
+      if (showInfo && activeRecipients.length > 0) {
+        await supabase.from('notifications').insert(
+          activeRecipients.map(r => ({
+            user_id: r.id,
+            title: `Show confirmed: ${showInfo.title}`,
+            message: `${showInfo.client_name}${showInfo.show_date ? ` · ${formatDate(showInfo.show_date)}` : ''}`,
+            type: 'stage_change' as const,
+            related_show_id: showId,
+          }))
+        )
+      }
+    }
+
     router.refresh()
   }
 

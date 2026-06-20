@@ -47,6 +47,8 @@ export function NotificationList({ initialNotifications, userId }: NotificationL
     task_assigned: '✅',
     document_uploaded: '📎',
     stage_change: '🔄',
+    leave_update: '🏖️',
+    new_post: '📣',
   }
 
   return (
