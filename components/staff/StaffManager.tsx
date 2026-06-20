@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { UserPlus, X, Trash2, Power, Mail, ShieldCheck } from 'lucide-react'
+import { UserPlus, X, Trash2, Power, Mail, ShieldCheck, ShieldAlert } from 'lucide-react'
 import type { Profile, AllowedEmail, Department, UserRole } from '@/types'
 
 interface StaffRow {
@@ -18,7 +18,7 @@ interface StaffRow {
   role: UserRole | null
   avatar_url: string | null
   profileId: string | null
-  status: 'active' | 'inactive' | 'invited'
+  status: 'active' | 'inactive' | 'invited' | 'no_access'
 }
 
 interface StaffManagerProps {
@@ -33,6 +33,7 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
   const supabase = createClient()
 
   const buildRows = (): StaffRow[] => {
+    const allowedEmails = new Set(allowed.map(a => a.email))
     const byEmail = new Map<string, StaffRow>()
     for (const a of allowed) {
       byEmail.set(a.email, {
@@ -47,6 +48,12 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
     }
     for (const pr of profiles) {
       const existing = byEmail.get(pr.email)
+      // Mirrors the actual access gate in app/dashboard/layout.tsx:
+      // admins always get in; everyone else needs an allowed_emails row.
+      let status: StaffRow['status']
+      if (pr.is_active === false) status = 'inactive'
+      else if (pr.role === 'admin' || allowedEmails.has(pr.email)) status = 'active'
+      else status = 'no_access' // has a profile, but missing from the allowlist — locked out
       byEmail.set(pr.email, {
         email: pr.email,
         full_name: pr.full_name ?? existing?.full_name ?? null,
@@ -54,7 +61,7 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
         role: pr.role ?? existing?.role ?? null,
         avatar_url: pr.avatar_url,
         profileId: pr.id,
-        status: pr.is_active === false ? 'inactive' : 'active',
+        status,
       })
     }
     return Array.from(byEmail.values()).sort((a, b) =>
@@ -67,6 +74,7 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
   const [invite, setInvite] = useState({ email: '', full_name: '', department: 'event' as Department, role: 'staff' as UserRole })
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<{ email: string; message: string } | null>(null)
 
   const updateRow = (email: string, patch: Partial<StaffRow>) =>
     setRows(rs => rs.map(r => r.email === email ? { ...r, ...patch } : r))
@@ -127,6 +135,23 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
     setBusy(null)
   }
 
+  const handleRestoreAccess = async (row: StaffRow) => {
+    setBusy(row.email)
+    setActionError(null)
+    const { error } = await supabase.from('allowed_emails').insert({
+      email: row.email,
+      full_name: row.full_name,
+      department: row.department,
+      role: row.role,
+    })
+    setBusy(null)
+    if (error) {
+      setActionError({ email: row.email, message: error.message })
+      return
+    }
+    updateRow(row.email, { status: 'active' })
+  }
+
   const handleRemove = async (row: StaffRow) => {
     if (!confirm(`Remove ${row.full_name ?? row.email}? They will lose all access immediately.`)) return
     setBusy(row.email)
@@ -138,9 +163,10 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
 
   const statusBadge = (status: StaffRow['status']) => {
     const map = {
-      active:   { label: 'Active',   cls: 'bg-emerald-500/10 text-emerald-400' },
-      inactive: { label: 'Inactive', cls: 'bg-red-500/10 text-red-400' },
-      invited:  { label: 'Invited',  cls: 'bg-amber-500/10 text-amber-400' },
+      active:    { label: 'Active',    cls: 'bg-emerald-500/10 text-emerald-400' },
+      inactive:  { label: 'Inactive',  cls: 'bg-red-500/10 text-red-400' },
+      invited:   { label: 'Invited',   cls: 'bg-amber-500/10 text-amber-400' },
+      no_access: { label: 'No Access', cls: 'bg-orange-500/10 text-orange-400' },
     }
     const s = map[status]
     return <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold', s.cls)}>{s.label}</span>
@@ -262,10 +288,26 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
                     </Select>
                   </div>
 
+                  {row.status === 'no_access' && (
+                    <p className="text-[11px] text-orange-400/80 mt-2 leading-relaxed">
+                      Has an account but isn&apos;t on the allowlist — locked out of the CRM. Restore to fix.
+                    </p>
+                  )}
+
                   {/* Actions */}
                   {!isSelf && (
-                    <div className="flex items-center gap-2 mt-3">
-                      {row.profileId && (
+                    <div className="flex items-center gap-2 mt-3 flex-wrap">
+                      {row.status === 'no_access' && (
+                        <button
+                          onClick={() => handleRestoreAccess(row)}
+                          disabled={busy === row.email}
+                          className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                          {busy === row.email ? 'Restoring...' : 'Restore Access'}
+                        </button>
+                      )}
+                      {row.profileId && row.status !== 'no_access' && (
                         <button
                           onClick={() => handleToggleActive(row)}
                           disabled={busy === row.email}
@@ -289,6 +331,9 @@ export function StaffManager({ profiles, allowed, currentProfile }: StaffManager
                         Remove
                       </button>
                     </div>
+                  )}
+                  {actionError?.email === row.email && (
+                    <p className="text-red-400 text-xs mt-2">{actionError.message}</p>
                   )}
                 </div>
               </div>
