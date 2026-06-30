@@ -50,11 +50,16 @@ export default async function DashboardPage() {
     posts = (enriched.data ?? []) as Post[]
   }
 
+  // Only shows dated today or later count as "upcoming" — so a past show that
+  // simply hasn't been marked Done yet never sticks in the hero card. Date in
+  // KL time so the cutoff flips at local midnight, not UTC.
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })
   const { data: upcomingShows } = await supabase
     .from('shows')
     .select('*')
     .neq('stage', 'done')
     .not('show_date', 'is', null)
+    .gte('show_date', today)
     .order('show_date', { ascending: true })
     .limit(4)
 
