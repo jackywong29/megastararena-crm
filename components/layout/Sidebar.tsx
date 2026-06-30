@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle, Umbrella, Users
+  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle, Users
 } from 'lucide-react'
 import { cn, getInitials, DEPARTMENT_LABELS } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -16,7 +16,7 @@ const navItems = [
   { href: '/dashboard/shows',    label: 'Shows',       icon: CalendarDays },
   { href: '/dashboard/calendar', label: 'Calendar',    icon: Calendar },
   { href: '/dashboard/tasks',    label: 'My Tasks',    icon: CheckSquare },
-  { href: '/dashboard/leave',    label: 'Leave',       icon: Umbrella },
+  { href: '/dashboard/team',     label: 'Team',        icon: Users },
 ]
 
 const bottomNavItems = [

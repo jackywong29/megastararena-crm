@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, CalendarDays, CheckSquare, Calendar, MoreHorizontal, X, Bell, Heart, FolderOpen, User, LogOut, Umbrella, Users } from 'lucide-react'
+import { Home, CalendarDays, CheckSquare, Calendar, MoreHorizontal, X, Bell, Heart, FolderOpen, User, LogOut, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +15,7 @@ const mainItems = [
 ]
 
 const baseMoreItems = [
-  { href: '/dashboard/leave',         label: 'Leave',            icon: Umbrella },
+  { href: '/dashboard/team',          label: 'Team',             icon: Users },
   { href: '/dashboard/notifications', label: 'Notifications',    icon: Bell },
   { href: '/dashboard/mission',       label: 'Mission & Values', icon: Heart },
   { href: '/dashboard/company',       label: 'Company Hub',      icon: FolderOpen },

@@ -7,12 +7,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { TaskList } from '@/components/tasks/TaskList'
 import { DocumentList } from '@/components/documents/DocumentList'
+import { SopChecklist } from '@/components/shows/SopChecklist'
 import {
   formatDate, formatTime, STAGE_LABELS, STAGE_COLORS,
   timeAgo, cn, canViewInternalNotes
 } from '@/lib/utils'
-import { FileText, CheckSquare, Info, Activity, Phone, Mail, User, Users, Clock, Calendar, Lock } from 'lucide-react'
-import type { Show, Task, Document as Doc, Profile, ShowStage, ActivityLog } from '@/types'
+import { FileText, CheckSquare, Info, Activity, Phone, Mail, User, Users, Clock, Calendar, Lock, ListChecks, MapPin } from 'lucide-react'
+import type { Show, Task, Document as Doc, Profile, ShowStage, ActivityLog, ShowChecklistItem } from '@/types'
 
 interface ShowDetailClientProps {
   showId: string
@@ -21,6 +22,7 @@ interface ShowDetailClientProps {
   show?: Show
   tasks?: Task[]
   documents?: Doc[]
+  checklist?: ShowChecklistItem[]
   activity?: any[]
   profile?: Profile | null
   tabMode?: boolean
@@ -28,7 +30,7 @@ interface ShowDetailClientProps {
 }
 
 export function ShowDetailClient({
-  showId, currentStage, userId, show, tasks = [], documents = [], activity = [], profile, tabMode = false, isStaff = false
+  showId, currentStage, userId, show, tasks = [], documents = [], checklist = [], activity = [], profile, tabMode = false, isStaff = false
 }: ShowDetailClientProps) {
   const supabase = createClient()
   const router = useRouter()
@@ -107,10 +109,14 @@ export function ShowDetailClient({
     added_task: 'added a task',
   }
 
+  const sopCounted = checklist.filter(i => !i.is_na)
+  const sopDone = sopCounted.filter(i => i.is_done).length
+
   return (
     <Tabs defaultValue="overview">
       <TabsList className="w-full sm:w-auto">
         <TabsTrigger value="overview"  className="gap-1.5"><Info className="w-3.5 h-3.5" />Overview</TabsTrigger>
+        <TabsTrigger value="sop"       className="gap-1.5"><ListChecks className="w-3.5 h-3.5" />SOP {sopCounted.length > 0 && `(${sopDone}/${sopCounted.length})`}</TabsTrigger>
         <TabsTrigger value="documents" className="gap-1.5"><FileText className="w-3.5 h-3.5" />Docs {documents.length > 0 && `(${documents.length})`}</TabsTrigger>
         <TabsTrigger value="tasks"     className="gap-1.5"><CheckSquare className="w-3.5 h-3.5" />Tasks {tasks.length > 0 && `(${tasks.length})`}</TabsTrigger>
         <TabsTrigger value="activity"  className="gap-1.5"><Activity className="w-3.5 h-3.5" />Activity</TabsTrigger>
@@ -140,7 +146,13 @@ export function ShowDetailClient({
                 <a href={`tel:${show.client_phone}`} className="text-[#E7191F] hover:text-red-400">{show.client_phone}</a>
               </div>
             )}
-            {!show.client_contact && !show.client_email && !show.client_phone && (
+            {show.client_address && (
+              <div className="flex items-start gap-2.5 text-sm">
+                <MapPin className="w-4 h-4 text-zinc-600 flex-shrink-0 mt-0.5" />
+                <span className="text-zinc-300 whitespace-pre-wrap">{show.client_address}</span>
+              </div>
+            )}
+            {!show.client_contact && !show.client_email && !show.client_phone && !show.client_address && (
               <p className="text-zinc-600 text-sm">No contact details added</p>
             )}
           </div>
@@ -191,6 +203,15 @@ export function ShowDetailClient({
                 </span>
               </div>
             )}
+            {show.meeting_date && (
+              <div className="flex items-center gap-2.5 text-sm">
+                <Calendar className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                <span className="text-zinc-600 text-xs w-20">Next Meeting</span>
+                <span className="text-zinc-300">
+                  {formatDate(show.meeting_date)}{show.meeting_time && ` · ${formatTime(show.meeting_time)}`}
+                </span>
+              </div>
+            )}
             {show.expected_attendance && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Users className="w-4 h-4 text-zinc-600 flex-shrink-0" />
@@ -215,6 +236,16 @@ export function ShowDetailClient({
             </div>
           )}
         </div>
+      </TabsContent>
+
+      {/* SOP / Checklist */}
+      <TabsContent value="sop">
+        <SopChecklist
+          showId={showId}
+          showDate={show.show_date}
+          initialItems={checklist}
+          profile={profile ?? null}
+        />
       </TabsContent>
 
       {/* Documents */}

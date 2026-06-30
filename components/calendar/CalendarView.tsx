@@ -310,10 +310,12 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
             {label}
           </div>
         ))}
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-teal-400" />
-          On Leave
-        </div>
+        {leaves.length > 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-teal-400" />
+            On Leave
+          </div>
+        )}
         <div className="flex items-center gap-1.5 text-xs text-zinc-400">
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-amber-400" />
           Public Holiday

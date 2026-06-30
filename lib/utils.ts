@@ -143,3 +143,11 @@ export function canViewInternalNotes(profile: PermProfile): boolean {
   if (!profile) return false
   return profile.role === 'admin' || profile.role === 'department_head'
 }
+
+// Sales owns the booking SOP — admin + anyone in Sales can edit the checklist.
+// Everyone else can view it but not tick / add / remove items.
+export function canEditSop(profile: PermProfile): boolean {
+  if (!profile) return false
+  if (profile.role === 'admin') return true
+  return profile.department === 'sales'
+}

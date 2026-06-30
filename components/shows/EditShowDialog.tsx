@@ -33,6 +33,7 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
     client_contact: show.client_contact ?? '',
     client_email: show.client_email ?? '',
     client_phone: show.client_phone ?? '',
+    client_address: show.client_address ?? '',
     event_type: show.event_type as EventType,
     stage: show.stage as ShowStage,
     show_date: show.show_date ?? '',
@@ -43,6 +44,8 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
     show_time: show.show_time ?? '',
     teardown_date: show.teardown_date ?? '',
     teardown_time: show.teardown_time ?? '',
+    meeting_date: show.meeting_date ?? '',
+    meeting_time: show.meeting_time ?? '',
     expected_attendance: show.expected_attendance?.toString() ?? '',
     notes: show.notes ?? '',
     internal_notes: show.internal_notes ?? '',
@@ -66,6 +69,7 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
       client_contact: form.client_contact || null,
       client_email: form.client_email || null,
       client_phone: form.client_phone || null,
+      client_address: form.client_address || null,
       event_type: form.event_type,
       stage: form.stage,
       show_date: form.show_date || null,
@@ -76,6 +80,8 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
       show_time: form.show_time || null,
       teardown_date: form.teardown_date || null,
       teardown_time: form.teardown_time || null,
+      meeting_date: form.meeting_date || null,
+      meeting_time: form.meeting_time || null,
       expected_attendance: form.expected_attendance ? parseInt(form.expected_attendance) : null,
       notes: form.notes || null,
       internal_notes: form.internal_notes || null,
@@ -152,24 +158,28 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
             </div>
 
             <div className={groupClass}>
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Client</h3>
+              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Client / Company</h3>
               <div className={fieldClass}>
-                <Label>Client / Organisation Name *</Label>
+                <Label>Company Name *</Label>
                 <Input value={form.client_name} onChange={e => set('client_name', e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className={fieldClass}>
-                  <Label>Contact Person</Label>
+                  <Label>Person In Charge (PIC)</Label>
                   <Input value={form.client_contact} onChange={e => set('client_contact', e.target.value)} />
                 </div>
                 <div className={fieldClass}>
-                  <Label>Phone</Label>
+                  <Label>Contact Number</Label>
                   <Input value={form.client_phone} onChange={e => set('client_phone', e.target.value)} />
                 </div>
               </div>
               <div className={fieldClass}>
                 <Label>Email</Label>
                 <Input type="email" value={form.client_email} onChange={e => set('client_email', e.target.value)} />
+              </div>
+              <div className={fieldClass}>
+                <Label>Company Address</Label>
+                <Textarea value={form.client_address} onChange={e => set('client_address', e.target.value)} rows={2} />
               </div>
             </div>
 
@@ -208,6 +218,14 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
                 <div className={fieldClass}>
                   <Label>Dismantle Time</Label>
                   <Input type="time" value={form.teardown_time} onChange={e => set('teardown_time', e.target.value)} />
+                </div>
+                <div className={fieldClass}>
+                  <Label>Next Meeting Date</Label>
+                  <Input type="date" value={form.meeting_date} onChange={e => set('meeting_date', e.target.value)} />
+                </div>
+                <div className={fieldClass}>
+                  <Label>Next Meeting Time</Label>
+                  <Input type="time" value={form.meeting_time} onChange={e => set('meeting_time', e.target.value)} />
                 </div>
               </div>
             </div>

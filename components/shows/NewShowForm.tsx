@@ -22,6 +22,7 @@ export function NewShowForm() {
     client_contact: '',
     client_email: '',
     client_phone: '',
+    client_address: '',
     event_type: 'concert' as EventType,
     stage: 'inquiry' as ShowStage,
     show_date: '',
@@ -32,6 +33,8 @@ export function NewShowForm() {
     show_time: '',
     teardown_date: '',
     teardown_time: '',
+    meeting_date: '',
+    meeting_time: '',
     expected_attendance: '',
     notes: '',
     internal_notes: '',
@@ -58,6 +61,7 @@ export function NewShowForm() {
         client_contact: form.client_contact || null,
         client_email: form.client_email || null,
         client_phone: form.client_phone || null,
+        client_address: form.client_address || null,
         event_type: form.event_type,
         stage: form.stage,
         show_date: form.show_date || null,
@@ -68,6 +72,8 @@ export function NewShowForm() {
         show_time: form.show_time || null,
         teardown_date: form.teardown_date || null,
         teardown_time: form.teardown_time || null,
+        meeting_date: form.meeting_date || null,
+        meeting_time: form.meeting_time || null,
         expected_attendance: form.expected_attendance ? parseInt(form.expected_attendance) : null,
         notes: form.notes || null,
         internal_notes: form.internal_notes || null,
@@ -147,22 +153,22 @@ export function NewShowForm() {
         </div>
       </div>
 
-      {/* Client Info */}
+      {/* Client / Company Info */}
       <div className={sectionClass}>
-        <h2 className={headingClass}>Client Information</h2>
+        <h2 className={headingClass}>Client / Company</h2>
 
         <div className="space-y-1.5">
-          <Label htmlFor="client_name">Client / Organisation Name *</Label>
+          <Label htmlFor="client_name">Company Name *</Label>
           <Input id="client_name" value={form.client_name} onChange={e => set('client_name', e.target.value)} placeholder="e.g. Live Nation Malaysia" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="client_contact">Contact Person</Label>
+            <Label htmlFor="client_contact">Person In Charge (PIC)</Label>
             <Input id="client_contact" value={form.client_contact} onChange={e => set('client_contact', e.target.value)} placeholder="Full name" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="client_phone">Phone</Label>
+            <Label htmlFor="client_phone">Contact Number</Label>
             <Input id="client_phone" value={form.client_phone} onChange={e => set('client_phone', e.target.value)} placeholder="+60 12 345 6789" />
           </div>
         </div>
@@ -170,6 +176,11 @@ export function NewShowForm() {
         <div className="space-y-1.5">
           <Label htmlFor="client_email">Email</Label>
           <Input id="client_email" type="email" value={form.client_email} onChange={e => set('client_email', e.target.value)} placeholder="client@example.com" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="client_address">Company Address</Label>
+          <Textarea id="client_address" value={form.client_address} onChange={e => set('client_address', e.target.value)} placeholder="Company billing / registered address..." rows={2} />
         </div>
       </div>
 
@@ -212,6 +223,14 @@ export function NewShowForm() {
           <div className="space-y-1.5">
             <Label htmlFor="teardown_time">Dismantle Time</Label>
             <Input id="teardown_time" type="time" value={form.teardown_time} onChange={e => set('teardown_time', e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="meeting_date">Next Meeting Date</Label>
+            <Input id="meeting_date" type="date" value={form.meeting_date} onChange={e => set('meeting_date', e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="meeting_time">Next Meeting Time</Label>
+            <Input id="meeting_time" type="time" value={form.meeting_time} onChange={e => set('meeting_time', e.target.value)} />
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@
 > start of every session (it's imported by `CLAUDE.md`). Edit it freely — anything here is treated as
 > project context. Ask Claude to "update PROJECT_STATUS.md" at the end of a work session to keep it current.
 
-**Last updated:** 2026-06-27
+**Last updated:** 2026-06-30
 
 ---
 
@@ -14,7 +14,7 @@ WhatsApp-groups + Google-Calendar workflow where documents and decisions kept ge
 use** — staff are actively being onboarded.
 
 - **Repo:** github.com/jackywong29/megastararena-crm · deployed on **Vercel**
-- **Location on disk:** `/Users/jacky/Desktop/MSA x Claude/megastar-crm`
+- **Location on disk:** `/Users/jacky/Desktop/Claude/megastar-crm`
 - **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (auth/DB/storage/realtime) · Radix UI
 - **Supabase project:** `ohtkqgvzagipbmpyozae` (Singapore region)
 - **Auth:** Google SSO only, **invite-only** via the `allowed_emails` table + `is_active` flag
@@ -33,11 +33,14 @@ use** — staff are actively being onboarded.
 ---
 
 ## Features built
-- **Shows & pipeline** — Kanban board (Inquiry/Confirmed/Done), show detail with Overview/Docs/Tasks/Activity tabs. New-show creation limited to admin + Sales/Management dept heads. Setup, Rehearsal & Dismantle each have an optional separate **date** (for multi-day shows) in addition to time. Internal notes hidden from `staff`.
-- **Tasks** — department-scoped permissions (dept head manages own dept only; staff can only tick; admin full). Preset SOP auto-tasks were removed by request — tasks are added manually. Personal "My Tasks" page.
-- **Leave system** — apply → pending → admin/`can_approve_leave` approve/decline. Shown on the Calendar (staff see own, managers see all) to catch clashes before confirming a show date.
-- **Home feed** — posts with pin (max 3, admin/dept-head), emoji reactions (👍❤️🎉👀), newest/oldest sort, threaded comments. Profile pages show the user's own posts.
-- **Notifications** — in-app bell (Supabase realtime). Fires on: show confirmed, leave approved/declined, new leave request, new post, new task in a department. Clickable → routes to the relevant page. Sidebar shows a dot on the bell.
+- **Shows & pipeline** — Kanban board (Inquiry/Confirmed/Done), show detail with Overview/**SOP**/Docs/Tasks/Activity tabs. New-show creation limited to admin + Sales/Management dept heads. Setup, Rehearsal & Dismantle each have an optional separate **date** (for multi-day shows) in addition to time, plus an optional **Next Meeting** date/time (`meeting_date`/`meeting_time`, schema-v10). Internal notes hidden from `staff`. Booking form fields use the Sales team's terms (Company Name, PIC, Contact Number, **Company Address** = `client_address`).
+- **Home** — greeting, then a prominent **"Next Show" hero card** (soonest dated, non-done show) showing date/time, next meeting, expected attendance, its open Booking-SOP next-steps + open tasks; below it a "More Upcoming" list, stats strip, and the team feed.
+- **Sales SOP / Booking checklist** (added 2026-06-30) — each show has a **SOP tab** with 4 sections seeded from the Sales team's workflow: Booking SOP (11 ordered steps), Pre-Event/Meeting Checklist, Document Checklist, After Event. Items support tick / add / remove / mark-**N/A** / note. Steps "Issue Second Invoice" / "Issue Final Invoice" auto-show a due date computed from `show_date` (−2 months / −2 weeks). The master template lives in `lib/sop.ts`; it seeds into `show_checklist_items` the first time a show is opened, then is fully editable **per show**. **Editing is Admin + Sales only** (`canEditSop` in lib/utils.ts); everyone else views read-only. Permissions are UI-enforced (RLS is permissive, matching tasks/documents). NOTE: this re-introduces seeded items — different from the old *operational* auto-tasks that were removed, because it's sales-owned, in its own tab, and every item is editable/removable. *Phase-2 backlog: an in-app editor for the master SOP template (currently code-only); optional file-link from Doc-checklist items to the Docs tab (`document_id` column already exists).*
+- **Tasks** — department-scoped permissions (dept head manages own dept only; staff can only tick; admin full). Preset SOP auto-tasks were removed by request — tasks are added manually. Personal "My Tasks" page also shows a **Booking SOP** section (open, non-N/A SOP steps across all shows, sorted by due date, tickable) for **Sales + Admin** only.
+- **Leave system** — ⚠️ **currently HIDDEN (2026-06-30)**, may return later. Nav links (sidebar + mobile) removed, calendar leave layer off, `/dashboard/leave` redirects to home. The `leave_applications` table + data and `LeavePageClient.tsx` are kept intact — to restore, undo those edits (see git). Original behaviour: apply → pending → admin/`can_approve_leave` approve/decline, shown on the Calendar.
+- **Home feed** — posts with pin (max 3, admin/dept-head), emoji reactions (👍❤️🎉👀), newest/oldest sort, threaded comments. Profile pages show the user's own posts. **@mentions** (2026-06-30) in posts + comments: type `@` for an autocomplete of staff (`MentionTextarea`), tagged people get a `mention` notification, mentions render highlighted (`MentionText`). Tagged user IDs stored in `posts.mentions` / `post_comments.mentions` (schema-v11). Helpers in `lib/mentions.ts`. **Posting/commenting sends a `mentions` array, so it errors until schema-v11 is run.**
+- **Team directory** (2026-06-30) — `/dashboard/team`, visible to everyone; searchable, grouped by department, inline cards (avatar, role, dept, email). "Team" nav entry in sidebar + mobile. No DB change (reads `profiles`).
+- **Notifications** — in-app bell (Supabase realtime). Fires on: show confirmed, new post, **@mention** (in post/comment), new task in a department. `mention`/`new_post` route to the home feed. (Leave-related notifications are dormant while leave is hidden.) Sidebar shows a dot on the bell.
 - **Staff & access** — admin-only page to invite by email, set role/dept, deactivate/remove. Self-healing "No Access" + Restore Access for the profile-exists-but-dropped-from-allowlist case.
 - **Calendar** — Monday-first, scrollable month-tab strip, Malaysia/KL public holidays seeded 2026–2027.
 - **Mobile** — bottom nav + "More" sheet; safe-area-inset handling so content/buttons aren't trapped behind the nav bar or iOS Safari URL bar.
@@ -57,7 +60,8 @@ then recreates it with the new values. **Check for this any time you add an enum
 ## Database migrations (run manually in Supabase SQL Editor, in order)
 `schema.sql` → `v2` → `v3` (leave) → `v4` (post pins/reactions/comments) → `v5` (allowed_emails, is_active,
 staff role) → `v6` (event-dept constraint fix) → `v7` (notification-type fix + public holidays) →
-`v8` (setup/rehearsal/dismantle dates).
+`v8` (setup/rehearsal/dismantle dates) → `v9` (client_address + show_checklist_items / Sales SOP) →
+`v10` (meeting_date/meeting_time on shows) → `v11` (`mention` notification type + posts/post_comments `mentions` arrays).
 
 There is no migration runner — Jacky pastes each file's SQL into the Supabase SQL Editor himself. When
 adding a migration, also paste the SQL inline in chat (he can't always open the file directly).
@@ -65,6 +69,10 @@ adding a migration, also paste the SQL inline in chat (he can't always open the 
 ---
 
 ## Open items / what's next
+- [ ] **Run `schema-v11.sql`** in Supabase (`mention` notif type + `mentions` arrays). Until it's run, **posting/commenting on the feed will error** (the feed sends a `mentions` array).
+- [ ] **Run `schema-v10.sql`** in Supabase (adds `meeting_date`/`meeting_time`). Until it's run, **creating/editing a show will error** (the forms send these fields).
+- [ ] **Run `schema-v9.sql`** in Supabase (adds `client_address` + `show_checklist_items`). Until it's run, the SOP tab and Company Address field won't work.
+- [ ] Staff feedback backlog (remaining): email notifications (Resend) — esp. email-on-@mention → doc-approval workflow → direct messaging/chat. Leave system may also be re-enabled. *(Team directory + in-app @mentions: done 2026-06-30.)*
 - [ ] **Confirm `schema-v8.sql` has been run** in Supabase (adds setup_date/rehearsal_date/teardown_date).
 - [ ] 2027 Islamic/lunar holiday dates are **estimates** pending official gazette — re-check closer to each date.
 - [ ] Historical past shows were never imported (staff re-enter manually for accuracy — by decision).

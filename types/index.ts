@@ -4,9 +4,10 @@ export type ShowStage = 'inquiry' | 'confirmed' | 'day_of' | 'done'
 export type EventType = 'concert' | 'corporate' | 'private_function' | 'other'
 export type TaskStatus = 'pending' | 'in_progress' | 'done'
 export type DocumentCategory = 'tech_rider' | 'venue_spec' | 'contract' | 'quotation' | 'invoice' | 'site_visit' | 'other'
-export type NotificationType = 'show_update' | 'task_assigned' | 'document_uploaded' | 'stage_change' | 'leave_update' | 'new_post'
+export type NotificationType = 'show_update' | 'task_assigned' | 'document_uploaded' | 'stage_change' | 'leave_update' | 'new_post' | 'mention'
 export type LeaveType = 'annual' | 'medical' | 'emergency'
 export type LeaveStatus = 'pending' | 'approved' | 'rejected'
+export type ChecklistSection = 'booking_sop' | 'pre_event' | 'doc_checklist' | 'after_event'
 
 export interface Profile {
   id: string
@@ -36,6 +37,7 @@ export interface Show {
   client_contact: string | null
   client_email: string | null
   client_phone: string | null
+  client_address: string | null
   event_type: EventType
   stage: ShowStage
   show_date: string | null
@@ -46,6 +48,8 @@ export interface Show {
   show_time: string | null
   teardown_date: string | null
   teardown_time: string | null
+  meeting_date: string | null
+  meeting_time: string | null
   expected_attendance: number | null
   notes: string | null
   internal_notes: string | null
@@ -83,6 +87,26 @@ export interface Task {
   profiles?: Profile
 }
 
+export interface ShowChecklistItem {
+  id: string
+  show_id: string
+  section: ChecklistSection
+  title: string
+  position: number
+  is_done: boolean
+  is_na: boolean
+  allow_na: boolean
+  note: string | null
+  due_date: string | null
+  relative_due: string | null
+  document_id: string | null
+  done_by: string | null
+  done_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Notification {
   id: string
   user_id: string
@@ -117,6 +141,7 @@ export interface PostComment {
   post_id: string
   user_id: string
   content: string
+  mentions?: string[] | null
   created_at: string
   updated_at: string
   profiles?: Profile | null
@@ -125,6 +150,7 @@ export interface PostComment {
 export interface Post {
   id: string
   content: string
+  mentions?: string[] | null
   is_pinned?: boolean
   pinned_at?: string | null
   created_by: string | null

@@ -50,12 +50,12 @@ export function NotificationList({ initialNotifications, userId }: NotificationL
     stage_change: '🔄',
     leave_update: '🏖️',
     new_post: '📣',
+    mention: '💬',
   }
 
   const getHref = (n: Notification): string | null => {
     if (n.related_show_id) return `/dashboard/shows/${n.related_show_id}`
-    if (n.type === 'leave_update') return '/dashboard/leave'
-    if (n.type === 'new_post') return '/dashboard'
+    if (n.type === 'new_post' || n.type === 'mention') return '/dashboard'
     return null
   }
 

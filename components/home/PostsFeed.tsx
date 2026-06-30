@@ -6,6 +6,9 @@ import { cn, getInitials, timeAgo } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, Send, X, Check, Pin, PinOff, MessageCircle, ArrowUpDown } from 'lucide-react'
+import { MentionTextarea } from '@/components/home/MentionTextarea'
+import { MentionText } from '@/components/home/MentionText'
+import { extractMentionIds, type MentionPerson } from '@/lib/mentions'
 import type { Post, PostReaction, PostComment, Profile } from '@/types'
 
 const EMOJIS = ['👍', '❤️', '🎉', '👀']
@@ -13,11 +16,13 @@ const EMOJIS = ['👍', '❤️', '🎉', '👀']
 interface PostsFeedProps {
   initialPosts: Post[]
   currentProfile: Profile | null
+  people?: MentionPerson[]
 }
 
-export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
+export function PostsFeed({ initialPosts, currentProfile, people = [] }: PostsFeedProps) {
   const supabase = createClient()
   const [posts, setPosts] = useState<Post[]>(initialPosts)
+  const peopleNames = useMemo(() => people.map(p => p.full_name ?? '').filter(Boolean), [people])
   const [newContent, setNewContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -58,9 +63,11 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
   const handlePost = async () => {
     if (!newContent.trim() || !currentProfile) return
     setSubmitting(true)
+    const content = newContent.trim()
+    const mentionedIds = extractMentionIds(content, people)
     const { data } = await supabase
       .from('posts')
-      .insert({ content: newContent.trim(), created_by: currentProfile.id })
+      .insert({ content, created_by: currentProfile.id, mentions: mentionedIds })
       .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at), post_reactions(id, post_id, user_id, emoji, created_at), post_comments(id, post_id, user_id, content, created_at, updated_at, profiles(id, full_name, email, avatar_url))')
       .single()
     if (data) {
@@ -74,13 +81,12 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
       const activeRecipients = (recipients ?? []).filter(r => r.is_active !== false)
       if (activeRecipients.length > 0) {
         const authorName = currentProfile.full_name ?? currentProfile.email
+        const mentionSet = new Set(mentionedIds)
         await supabase.from('notifications').insert(
-          activeRecipients.map(r => ({
-            user_id: r.id,
-            title: `${authorName} posted an update`,
-            message: newContent.trim().slice(0, 100),
-            type: 'new_post' as const,
-          }))
+          activeRecipients.map(r => mentionSet.has(r.id)
+            ? { user_id: r.id, title: `${authorName} mentioned you`, message: content.slice(0, 100), type: 'mention' as const }
+            : { user_id: r.id, title: `${authorName} posted an update`, message: content.slice(0, 100), type: 'new_post' as const }
+          )
         )
       }
     }
@@ -152,8 +158,9 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
   const handleComment = async (postId: string) => {
     const content = newComments[postId]?.trim()
     if (!content || !currentProfile) return
+    const mentionedIds = extractMentionIds(content, people)
     const { data } = await supabase.from('post_comments')
-      .insert({ post_id: postId, user_id: currentProfile.id, content })
+      .insert({ post_id: postId, user_id: currentProfile.id, content, mentions: mentionedIds })
       .select('*, profiles(id, full_name, email, avatar_url)')
       .single()
     if (data) {
@@ -162,6 +169,17 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
         : p
       ))
       setNewComments(n => ({ ...n, [postId]: '' }))
+
+      const targets = mentionedIds.filter(id => id !== currentProfile.id)
+      if (targets.length > 0) {
+        const authorName = currentProfile.full_name ?? currentProfile.email
+        await supabase.from('notifications').insert(targets.map(id => ({
+          user_id: id,
+          title: `${authorName} mentioned you in a comment`,
+          message: content.slice(0, 100),
+          type: 'mention' as const,
+        })))
+      }
     }
   }
 
@@ -225,11 +243,12 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-3">
-            <textarea
+            <MentionTextarea
               value={newContent}
-              onChange={e => setNewContent(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePost() }}
-              placeholder="Share an update with the team..."
+              onChange={setNewContent}
+              people={people}
+              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handlePost() } }}
+              placeholder="Share an update with the team... type @ to mention someone"
               rows={2}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#E7191F] focus:border-transparent resize-none"
             />
@@ -346,7 +365,7 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap"><MentionText text={post.content} names={peopleNames} /></p>
                   )}
                 </div>
               </div>
@@ -442,7 +461,7 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
                               )}
                             </div>
                           </div>
-                          <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">{comment.content}</p>
+                          <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed whitespace-pre-wrap"><MentionText text={comment.content} names={peopleNames} /></p>
                         </div>
                       </div>
                     )
@@ -456,18 +475,21 @@ export function PostsFeed({ initialPosts, currentProfile }: PostsFeedProps) {
                         {getInitials(currentProfile?.full_name ?? null, currentProfile?.email ?? '')}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1.5">
-                      <input
+                    <div className="flex-1 flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-2xl px-3 py-1.5">
+                      <MentionTextarea
                         value={newComments[post.id] ?? ''}
-                        onChange={e => setNewComments(n => ({ ...n, [post.id]: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter') handleComment(post.id) }}
-                        placeholder="Write a comment..."
-                        className="flex-1 bg-transparent text-xs text-white placeholder:text-zinc-600 focus:outline-none"
+                        onChange={v => setNewComments(n => ({ ...n, [post.id]: v }))}
+                        people={people}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(post.id) } }}
+                        placeholder="Write a comment... type @ to mention"
+                        rows={1}
+                        wrapperClassName="flex-1"
+                        className="w-full bg-transparent text-xs text-white placeholder:text-zinc-600 focus:outline-none resize-none leading-relaxed py-0.5"
                       />
                       <button
                         onClick={() => handleComment(post.id)}
                         disabled={!newComments[post.id]?.trim()}
-                        className="text-[#E7191F] disabled:text-zinc-700 transition-colors"
+                        className="text-[#E7191F] disabled:text-zinc-700 transition-colors flex-shrink-0"
                       >
                         <Send className="w-3.5 h-3.5" />
                       </button>

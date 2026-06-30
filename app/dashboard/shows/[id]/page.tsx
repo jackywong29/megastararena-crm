@@ -8,9 +8,10 @@ import {
   formatDate, formatTime, STAGE_COLORS, STAGE_LABELS,
   EVENT_TYPE_LABELS, EVENT_TYPE_COLORS
 } from '@/lib/utils'
+import { buildChecklistRows } from '@/lib/sop'
 import { ChevronLeft, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Profile, Show, Task, Document, UserRole } from '@/types'
+import type { Profile, Show, Task, Document, UserRole, ShowChecklistItem } from '@/types'
 
 export default async function ShowDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -42,6 +43,23 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
     .eq('show_id', id)
     .order('created_at', { ascending: false })
     .limit(20)
+
+  // Booking SOP checklist — seed from the template the first time a show is opened
+  let { data: checklist } = await supabase
+    .from('show_checklist_items')
+    .select('*')
+    .eq('show_id', id)
+    .order('position', { ascending: true })
+
+  if (!checklist || checklist.length === 0) {
+    await supabase.from('show_checklist_items').insert(buildChecklistRows(id, user.id))
+    const seeded = await supabase
+      .from('show_checklist_items')
+      .select('*')
+      .eq('show_id', id)
+      .order('position', { ascending: true })
+    checklist = seeded.data
+  }
 
   const p = profile as Profile | null
   const s = show as Show
@@ -100,6 +118,7 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
           show={s}
           tasks={tasks as Task[] ?? []}
           documents={documents as Document[] ?? []}
+          checklist={checklist as ShowChecklistItem[] ?? []}
           activity={activity ?? []}
           profile={p}
           isStaff={isStaff}

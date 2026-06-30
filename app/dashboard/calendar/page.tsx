@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/Header'
 import { CalendarView } from '@/components/calendar/CalendarView'
-import type { Profile, Show, LeaveApplication, PublicHoliday } from '@/types'
+import type { Profile, Show, PublicHoliday } from '@/types'
 
 export default async function CalendarPage() {
   const supabase = await createClient()
@@ -19,18 +19,8 @@ export default async function CalendarPage() {
     .order('show_date', { ascending: true })
 
   const p = profile as Profile | null
-  const isManager = p?.role === 'admin' || p?.can_approve_leave === true
 
-  let leavesQuery = supabase
-    .from('leave_applications')
-    .select('*, profiles(id, full_name, email, avatar_url)')
-    .neq('status', 'rejected')
-
-  if (!isManager) {
-    leavesQuery = leavesQuery.eq('user_id', user.id)
-  }
-  const { data: leaves } = await leavesQuery
-
+  // Leave system is currently hidden — calendar shows shows + public holidays only.
   const { data: holidays } = await supabase
     .from('public_holidays')
     .select('*')
@@ -42,9 +32,8 @@ export default async function CalendarPage() {
       <div className="p-4 md:p-6">
         <CalendarView
           shows={(shows ?? []) as Show[]}
-          leaves={(leaves ?? []) as LeaveApplication[]}
+          leaves={[]}
           holidays={(holidays ?? []) as PublicHoliday[]}
-          isManager={isManager}
         />
       </div>
     </>
