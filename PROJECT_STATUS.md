@@ -43,7 +43,7 @@ use** — staff are actively being onboarded.
 - **Team directory** (2026-06-30) — `/dashboard/team`, visible to everyone; searchable, grouped by department, inline cards (avatar, role, dept, email). "Team" nav entry in sidebar + mobile. No DB change (reads `profiles`).
 - **Notifications** — in-app bell (Supabase realtime). Fires on: show confirmed, new post, **@mention** (in post/comment), new task in a department. `mention`/`new_post` route to the home feed. (Leave-related notifications are dormant while leave is hidden.) Sidebar shows a dot on the bell.
 - **Staff & access** — admin-only page to invite by email, set role/dept, deactivate/remove. Self-healing "No Access" + Restore Access for the profile-exists-but-dropped-from-allowlist case.
-- **Calendar** — Monday-first, scrollable month-tab strip, Malaysia/KL public holidays seeded 2026–2027. Shows are coloured by **stage only** (2026-07-03): 🟢 Inquiry/soft-book = green, 🔴 Confirmed = brand red, past/Done = greyed. Event-category colours (concert/corporate/private) were removed. **Setup / Rehearsal / Dismantle** each plot as their own coloured chip (sky / violet / orange) on their `setup_date`/`rehearsal_date`/`teardown_date` — but only when that date differs from the show date (so single-day shows stay clean).
+- **Calendar** — Monday-first, scrollable month-tab strip (now runs **6 months back → 10 years forward**, with a **year dropdown** for quick jumps), Malaysia/KL public holidays. Shows are coloured by **stage only**: 🟢 Inquiry/soft-book = green, 🔴 Confirmed = brand red, past/Done = greyed; event-category colours removed. A show's **Setup → Rehearsal → Show → Dismantle** render as **one connected stage-coloured bar** (updated 2026-07-03): a full-bleed strip per day, rounded only on the run's ends so consecutive days join into a single line, with an **icon + label** per phase (Setup/Rehearsal/Show/Dismantle) — the Show day uses the solid shade. Phases only extend the bar when their date differs from the show date (single-day show = one "Show" block). Holidays seeded **2026–2036** (schema-v13): fixed-date + Agong + CNY exact/confident; Islamic holidays via tabular calendar (±1 day estimate); Thaipusam/Wesak/Deepavali intentionally not seeded past 2027 (can't be computed reliably — add from gazette).
 - **Mobile** — bottom nav + "More" sheet; safe-area-inset handling so content/buttons aren't trapped behind the nav bar or iOS Safari URL bar.
 - **Other** — tutorial modal, header live search, clickable dashboard stats, Mission/Vision/Values page. Legal entity name: **"MegaStar Arena KL Sdn Bhd"**.
 
@@ -63,7 +63,8 @@ then recreates it with the new values. **Check for this any time you add an enum
 staff role) → `v6` (event-dept constraint fix) → `v7` (notification-type fix + public holidays) →
 `v8` (setup/rehearsal/dismantle dates) → `v9` (client_address + show_checklist_items / Sales SOP) →
 `v10` (meeting_date/meeting_time on shows) → `v11` (`mention` notification type + posts/post_comments `mentions` arrays) →
-`v12` (`meeting_info` JSONB on shows — the Meeting Info spec sheet).
+`v12` (`meeting_info` JSONB on shows — the Meeting Info spec sheet) →
+`v13` (Malaysia/KL public holidays 2028–2036).
 
 There is no migration runner — Jacky pastes each file's SQL into the Supabase SQL Editor himself. When
 adding a migration, also paste the SQL inline in chat (he can't always open the file directly).
@@ -71,7 +72,8 @@ adding a migration, also paste the SQL inline in chat (he can't always open the 
 ---
 
 ## Open items / what's next
-- [ ] **Run `schema-v12.sql`** in Supabase (adds `meeting_info` JSONB to shows). Until it's run, **saving the Meeting Info tab will error**. (Calendar changes need no migration.)
+- [ ] **Run `schema-v13.sql`** in Supabase (seeds MY/KL holidays 2028–2036). Optional — the calendar works without it; it just fills future holidays. Thaipusam/Wesak/Deepavali still need adding from the gazette a few years at a time.
+- [ ] **Run `schema-v12.sql`** in Supabase (adds `meeting_info` JSONB to shows). Until it's run, **saving the Meeting Info tab will error**. (Calendar visual changes need no migration.)
 - [x] **schema-v9/v10/v11 run & deployed (2026-07-01).** Jacky confirmed v9–v11 are applied in Supabase; the full feature batch (Sales SOP, hidden Leave, Next Show hero, SOP-in-My-Tasks, Team directory, @mentions) + the hero "upcoming-only" fix are pushed to `main` and live on Vercel.
 - [ ] Staff feedback backlog (remaining): email notifications (Resend) — esp. email-on-@mention → doc-approval workflow → direct messaging/chat. Leave system may also be re-enabled. *(Team directory + in-app @mentions: done 2026-06-30.)*
 - [ ] 2027 Islamic/lunar holiday dates are **estimates** pending official gazette — re-check closer to each date.

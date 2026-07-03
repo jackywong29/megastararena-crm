@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Wrench, Mic, Star, Package, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Show, ShowStage, LeaveApplication, PublicHoliday } from '@/types'
 
@@ -19,32 +19,35 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-// Shows are coloured by STAGE only — Inquiry (soft book) vs Confirmed — plus a
-// greyed style for past/Done shows. No more event-category colours.
-const STAGE_STYLE: Record<string, { chip: string; dot: string; label: string }> = {
-  inquiry:   { chip: 'bg-emerald-500/20 text-emerald-300', dot: 'bg-emerald-500', label: 'Inquiry (soft book)' },
-  confirmed: { chip: 'bg-[#E7191F]/20 text-red-300',       dot: 'bg-[#E7191F]',   label: 'Confirmed' },
-  day_of:    { chip: 'bg-emerald-500/20 text-emerald-300', dot: 'bg-emerald-500', label: 'Confirmed' },
-  done:      { chip: 'bg-zinc-700/40 text-zinc-500',       dot: 'bg-zinc-600',    label: 'Past Event' },
+type PhaseKind = 'setup' | 'rehearsal' | 'show' | 'dismantle'
+type EntryKind = PhaseKind | 'gap'
+
+// One colour per show = its STAGE. Inquiry (soft book) green, Confirmed red,
+// past/Done greyed. The show day uses the solid shade; setup / rehearsal /
+// dismantle / connecting days use the soft shade of the same colour.
+const STAGE_BAR: Record<string, { base: string; solid: string; dot: string; label: string }> = {
+  inquiry:   { base: 'bg-emerald-500/20 text-emerald-200', solid: 'bg-emerald-500 text-white', dot: 'bg-emerald-500', label: 'Inquiry (soft book)' },
+  confirmed: { base: 'bg-[#E7191F]/20 text-red-200',       solid: 'bg-[#E7191F] text-white',   dot: 'bg-[#E7191F]',   label: 'Confirmed' },
+  day_of:    { base: 'bg-emerald-500/20 text-emerald-200', solid: 'bg-emerald-500 text-white', dot: 'bg-emerald-500', label: 'Confirmed' },
+  done:      { base: 'bg-zinc-700/50 text-zinc-400',       solid: 'bg-zinc-600 text-white',    dot: 'bg-zinc-500',    label: 'Past Event' },
 }
 
-// Setup / Rehearsal / Dismantle get their own distinct chips so the multi-day
-// footprint of a show is visible at a glance.
-const PHASE_STYLE: Record<string, { chip: string; dot: string; label: string }> = {
-  setup:     { chip: 'bg-sky-500/20 text-sky-300',       dot: 'bg-sky-500',    label: 'Setup' },
-  rehearsal: { chip: 'bg-violet-500/20 text-violet-300', dot: 'bg-violet-500', label: 'Rehearsal' },
-  dismantle: { chip: 'bg-orange-500/20 text-orange-300', dot: 'bg-orange-500', label: 'Dismantle' },
+// Phases are told apart by icon + label, not by colour.
+const PHASE_META: Record<PhaseKind, { label: string; Icon: LucideIcon }> = {
+  setup:     { label: 'Setup',     Icon: Wrench },
+  rehearsal: { label: 'Rehearsal', Icon: Mic },
+  show:      { label: 'Show',      Icon: Star },
+  dismantle: { label: 'Dismantle', Icon: Package },
 }
 
-type EntryKind = 'show' | 'setup' | 'rehearsal' | 'dismantle'
-
-interface DayEntry {
+interface ShowRun {
   showId: string
   title: string
   clientName: string
-  kind: EntryKind
   stage: ShowStage
-  date: string
+  firstDate: string
+  lastDate: string
+  kindByDate: Record<string, PhaseKind>
 }
 
 const LEAVE_TYPE_LABELS: Record<string, string> = {
@@ -53,16 +56,28 @@ const LEAVE_TYPE_LABELS: Record<string, string> = {
   emergency: 'Emergency Leave',
 }
 
-// Style for one entry: a done show greys everything; otherwise show = stage colour,
-// phases = their own colour.
-function entryStyle(e: DayEntry) {
-  if (e.stage === 'done') return STAGE_STYLE.done
-  if (e.kind === 'show') return STAGE_STYLE[e.stage] ?? STAGE_STYLE.inquiry
-  return PHASE_STYLE[e.kind]
-}
+// Turn a show into one continuous run from its earliest to its latest dated
+// phase. The show day always wins a date; setup/rehearsal/dismantle only get
+// their own marker when they have an explicit date (a null phase date means
+// "same day as the show", so it folds into the show day).
+function buildRun(s: Show): ShowRun | null {
+  if (!s.show_date) return null
+  const kindByDate: Record<string, PhaseKind> = {}
+  const mark = (d: string | null, kind: PhaseKind) => {
+    if (!d) return
+    if (kindByDate[d] === 'show') return
+    if (kind === 'show') { kindByDate[d] = 'show'; return }
+    if (!kindByDate[d]) kindByDate[d] = kind
+  }
+  mark(s.show_date, 'show')
+  mark(s.setup_date, 'setup')
+  mark(s.rehearsal_date, 'rehearsal')
+  mark(s.teardown_date, 'dismantle')
 
-function entryLabel(e: DayEntry) {
-  return e.kind === 'show' ? e.title : `${PHASE_STYLE[e.kind].label} · ${e.title}`
+  const dates = [s.show_date, s.setup_date, s.rehearsal_date, s.teardown_date].filter(Boolean) as string[]
+  const firstDate = dates.reduce((a, b) => (a < b ? a : b))
+  const lastDate = dates.reduce((a, b) => (a > b ? a : b))
+  return { showId: s.id, title: s.title, clientName: s.client_name, stage: s.stage, firstDate, lastDate, kindByDate }
 }
 
 export function CalendarView({ shows, leaves = [], holidays = [], isManager = false }: CalendarViewProps) {
@@ -73,33 +88,29 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
   const stripRef = useRef<HTMLDivElement>(null)
   const activeTabRef = useRef<HTMLButtonElement>(null)
 
-  // Flatten every show into its dated entries: the show itself, plus setup /
-  // rehearsal / dismantle when they fall on a DIFFERENT day than the show.
-  const allEntries: DayEntry[] = []
+  const runs: ShowRun[] = []
   for (const s of shows) {
-    if (s.show_date) {
-      allEntries.push({ showId: s.id, title: s.title, clientName: s.client_name, kind: 'show', stage: s.stage, date: s.show_date })
-    }
-    if (s.setup_date && s.setup_date !== s.show_date) {
-      allEntries.push({ showId: s.id, title: s.title, clientName: s.client_name, kind: 'setup', stage: s.stage, date: s.setup_date })
-    }
-    if (s.rehearsal_date && s.rehearsal_date !== s.show_date) {
-      allEntries.push({ showId: s.id, title: s.title, clientName: s.client_name, kind: 'rehearsal', stage: s.stage, date: s.rehearsal_date })
-    }
-    if (s.teardown_date && s.teardown_date !== s.show_date) {
-      allEntries.push({ showId: s.id, title: s.title, clientName: s.client_name, kind: 'dismantle', stage: s.stage, date: s.teardown_date })
-    }
+    const r = buildRun(s)
+    if (r) runs.push(r)
   }
+  // Consistent ordering (earliest-starting first) keeps a given show in the
+  // same vertical lane across the days it spans, so the bar reads continuous.
+  runs.sort((a, b) => (a.firstDate === b.firstDate ? a.showId.localeCompare(b.showId) : a.firstDate.localeCompare(b.firstDate)))
 
-  // Rolling window of months: 6 before → 18 after today
+  const runsOnDate = (dateStr: string) => runs.filter(r => dateStr >= r.firstDate && dateStr <= r.lastDate)
+
+  // Rolling window of months: 6 before → 10 years after today, so shows can be
+  // planned a decade out. The year dropdown jumps quickly; the strip scrolls.
   const monthTabs: { year: number; month: number }[] = []
   {
     const start = new Date(today.getFullYear(), today.getMonth() - 6, 1)
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 6 + 120; i++) {
       const d = new Date(start.getFullYear(), start.getMonth() + i, 1)
       monthTabs.push({ year: d.getFullYear(), month: d.getMonth() })
     }
   }
+  const yearOptions: number[] = []
+  for (let y = today.getFullYear() - 1; y <= today.getFullYear() + 10; y++) yearOptions.push(y)
 
   // Keep the selected month chip scrolled into view
   useEffect(() => {
@@ -122,10 +133,6 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
 
   const dateStrFor = (day: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
-  const getEntriesOnDate = (day: number) => {
-    const dateStr = dateStrFor(day)
-    return allEntries.filter(e => e.date === dateStr)
-  }
   const getHolidaysOnDate = (day: number) => {
     const dateStr = dateStrFor(day)
     return holidays.filter(h => h.date === dateStr)
@@ -147,19 +154,55 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const selectedEntries = selectedDate ? allEntries.filter(e => e.date === selectedDate) : []
+  const selectedRuns = selectedDate ? runsOnDate(selectedDate) : []
   const selectedHolidays = selectedDate ? holidays.filter(h => h.date === selectedDate) : []
   const selectedLeaves = selectedDate ? leaves.filter(l => selectedDate >= l.start_date && selectedDate <= l.end_date) : []
-  const hasSelection = selectedEntries.length > 0 || selectedHolidays.length > 0 || selectedLeaves.length > 0
+  const hasSelection = selectedRuns.length > 0 || selectedHolidays.length > 0 || selectedLeaves.length > 0
+
+  // One day's segment of a run: full-bleed strip, rounded only on the ends of
+  // the run so consecutive days visually join into one bar.
+  const renderStrip = (run: ShowRun, dateStr: string, keySuffix: string) => {
+    const kind = (run.kindByDate[dateStr] ?? 'gap') as EntryKind
+    const isStart = dateStr === run.firstDate
+    const isEnd = dateStr === run.lastDate
+    const st = STAGE_BAR[run.stage] ?? STAGE_BAR.inquiry
+    const isShow = kind === 'show'
+    const meta = kind !== 'gap' ? PHASE_META[kind] : null
+    return (
+      <Link
+        key={`${run.showId}-${keySuffix}`}
+        href={`/dashboard/shows/${run.showId}`}
+        onClick={e => e.stopPropagation()}
+        title={`${run.title} — ${kind === 'gap' ? 'in progress' : PHASE_META[kind].label}`}
+        className={cn(
+          '-mx-2 h-[18px] px-1.5 flex items-center gap-1 text-[10px] font-medium overflow-hidden',
+          isShow ? st.solid : st.base,
+          isStart && 'rounded-l-md',
+          isEnd && 'rounded-r-md',
+        )}
+      >
+        {meta && <meta.Icon className="w-3 h-3 flex-shrink-0" />}
+        {meta && <span className="truncate">{isShow ? run.title : meta.label}</span>}
+      </Link>
+    )
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xl font-bold text-white truncate">
           {MONTHS[month]} {year}
         </h2>
         <div className="flex items-center gap-2">
+          <select
+            value={year}
+            onChange={e => setYear(Number(e.target.value))}
+            className="bg-zinc-800 text-white text-xs font-medium rounded-lg px-2 py-1.5 border border-zinc-700 hover:bg-zinc-700 transition-colors cursor-pointer"
+            aria-label="Jump to year"
+          >
+            {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
           <button
             onClick={prevMonth}
             className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
@@ -226,17 +269,17 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
         {/* Day cells */}
         <div className="grid grid-cols-7">
           {cells.map((day, i) => {
-            const dayEntries = day ? getEntriesOnDate(day) : []
+            const dateStr = day ? dateStrFor(day) : ''
+            const dayRuns = day ? runsOnDate(dateStr) : []
             const dayHolidays = day ? getHolidaysOnDate(day) : []
             const dayLeaves = day ? getLeavesOnDate(day) : []
             const today_ = day ? isToday(day) : false
-            const dateStr = day ? dateStrFor(day) : ''
             return (
               <div
                 key={i}
                 onClick={() => day && handleDayClick(day)}
                 className={cn(
-                  'min-h-[84px] p-2 border-b border-r border-zinc-800/50 transition-colors',
+                  'min-h-[88px] p-2 border-b border-r border-zinc-800/50 transition-colors overflow-hidden',
                   day ? 'cursor-pointer hover:bg-zinc-800/40' : '',
                   i % 7 === 6 && 'border-r-0',
                   selectedDate === dateStr && 'bg-zinc-800/60',
@@ -257,25 +300,10 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
                       </div>
                     )}
 
-                    <div className="mt-1 space-y-1">
-                      {dayEntries.slice(0, 3).map((e, idx) => {
-                        const st = entryStyle(e)
-                        return (
-                          <Link
-                            key={`${e.showId}-${e.kind}-${idx}`}
-                            href={`/dashboard/shows/${e.showId}`}
-                            onClick={ev => ev.stopPropagation()}
-                            className={cn(
-                              'block text-[10px] font-medium px-1.5 py-0.5 rounded truncate',
-                              st.chip
-                            )}
-                          >
-                            {entryLabel(e)}
-                          </Link>
-                        )
-                      })}
-                      {dayEntries.length > 3 && (
-                        <span className="text-[10px] text-zinc-600">+{dayEntries.length - 3} more</span>
+                    <div className="mt-1 space-y-0.5">
+                      {dayRuns.slice(0, 3).map((run, idx) => renderStrip(run, dateStr, `cell-${idx}`))}
+                      {dayRuns.length > 3 && (
+                        <span className="text-[10px] text-zinc-600">+{dayRuns.length - 3} more</span>
                       )}
                     </div>
 
@@ -305,22 +333,23 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
             </div>
           )}
 
-          {selectedEntries.length > 0 && (
+          {selectedRuns.length > 0 && (
             <div className="space-y-2">
-              {selectedEntries.map((e, idx) => {
-                const st = entryStyle(e)
+              {selectedRuns.map(run => {
+                const kind = (selectedDate ? (run.kindByDate[selectedDate] ?? 'gap') : 'gap') as EntryKind
+                const st = STAGE_BAR[run.stage] ?? STAGE_BAR.inquiry
+                const phaseLabel = kind === 'gap' ? 'In progress' : PHASE_META[kind].label
                 return (
                   <Link
-                    key={`${e.showId}-${e.kind}-${idx}`}
-                    href={`/dashboard/shows/${e.showId}`}
+                    key={run.showId}
+                    href={`/dashboard/shows/${run.showId}`}
                     className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors group"
                   >
                     <span className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', st.dot)} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-white group-hover:text-[#E7191F] transition-colors truncate">{e.title}</div>
+                      <div className="font-medium text-sm text-white group-hover:text-[#E7191F] transition-colors truncate">{run.title}</div>
                       <div className="text-xs text-zinc-500">
-                        {e.clientName}
-                        {e.kind !== 'show' && <span className="text-zinc-400"> · {PHASE_STYLE[e.kind].label}</span>}
+                        {run.clientName} · <span className="text-zinc-400">{phaseLabel}</span>
                       </div>
                     </div>
                   </Link>
@@ -351,42 +380,37 @@ export function CalendarView({ shows, leaves = [], holidays = [], isManager = fa
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-emerald-500" />
-          Inquiry (soft book)
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#E7191F]" />
-          Confirmed
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-zinc-600" />
-          Past Event
-        </div>
-        <span className="w-px h-3 bg-zinc-700" />
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-sky-500" />
-          Setup
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-violet-500" />
-          Rehearsal
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-orange-500" />
-          Dismantle
-        </div>
-        <span className="w-px h-3 bg-zinc-700" />
-        {leaves.length > 0 && (
+      <div className="space-y-2">
+        <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-teal-400" />
-            On Leave
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-emerald-500" />
+            Inquiry (soft book)
           </div>
-        )}
-        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-amber-400" />
-          Public Holiday
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#E7191F]" />
+            Confirmed
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-zinc-500" />
+            Past Event
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-amber-400" />
+            Public Holiday
+          </div>
+          {leaves.length > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-teal-400" />
+              On Leave
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
+          <span className="text-[11px] text-zinc-600">Show days:</span>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400"><Wrench className="w-3 h-3" /> Setup</div>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400"><Mic className="w-3 h-3" /> Rehearsal</div>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400"><Star className="w-3 h-3" /> Show</div>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400"><Package className="w-3 h-3" /> Dismantle</div>
         </div>
       </div>
     </div>
