@@ -9,6 +9,17 @@ export type LeaveType = 'annual' | 'medical' | 'emergency'
 export type LeaveStatus = 'pending' | 'approved' | 'rejected'
 export type ChecklistSection = 'booking_sop' | 'pre_event' | 'doc_checklist' | 'after_event'
 
+export interface MeetingInfoExtra {
+  id: string
+  label: string
+  value: string
+}
+
+export interface MeetingInfo {
+  fields: Record<string, string>
+  extras: MeetingInfoExtra[]
+}
+
 export interface Profile {
   id: string
   email: string
@@ -50,6 +61,7 @@ export interface Show {
   teardown_time: string | null
   meeting_date: string | null
   meeting_time: string | null
+  meeting_info: MeetingInfo | null
   expected_attendance: number | null
   notes: string | null
   internal_notes: string | null

@@ -151,3 +151,7 @@ export function canEditSop(profile: PermProfile): boolean {
   if (profile.role === 'admin') return true
   return profile.department === 'sales'
 }
+
+// The Meeting Info spec sheet is also Sales-owned — same edit rule as the SOP.
+// Everyone can view it (it exists to align every department); only Admin + Sales edit.
+export const canEditMeetingInfo = canEditSop

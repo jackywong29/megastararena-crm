@@ -8,11 +8,13 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { TaskList } from '@/components/tasks/TaskList'
 import { DocumentList } from '@/components/documents/DocumentList'
 import { SopChecklist } from '@/components/shows/SopChecklist'
+import { MeetingInfo } from '@/components/shows/MeetingInfo'
 import {
   formatDate, formatTime, STAGE_LABELS, STAGE_COLORS,
   timeAgo, cn, canViewInternalNotes
 } from '@/lib/utils'
-import { FileText, CheckSquare, Info, Activity, Phone, Mail, User, Users, Clock, Calendar, Lock, ListChecks, MapPin } from 'lucide-react'
+import { MEETING_INFO_KEYS } from '@/lib/meetingInfo'
+import { FileText, CheckSquare, Info, Activity, Phone, Mail, User, Users, Clock, Calendar, Lock, ListChecks, MapPin, ClipboardList } from 'lucide-react'
 import type { Show, Task, Document as Doc, Profile, ShowStage, ActivityLog, ShowChecklistItem } from '@/types'
 
 interface ShowDetailClientProps {
@@ -112,11 +114,17 @@ export function ShowDetailClient({
   const sopCounted = checklist.filter(i => !i.is_na)
   const sopDone = sopCounted.filter(i => i.is_done).length
 
+  const mi = show.meeting_info
+  const meetingFilled = mi
+    ? MEETING_INFO_KEYS.filter(k => (mi.fields?.[k] ?? '').trim()).length + (mi.extras?.filter(e => e.value.trim()).length ?? 0)
+    : 0
+
   return (
     <Tabs defaultValue="overview">
       <TabsList className="w-full sm:w-auto">
         <TabsTrigger value="overview"  className="gap-1.5"><Info className="w-3.5 h-3.5" />Overview</TabsTrigger>
         <TabsTrigger value="sop"       className="gap-1.5"><ListChecks className="w-3.5 h-3.5" />SOP {sopCounted.length > 0 && `(${sopDone}/${sopCounted.length})`}</TabsTrigger>
+        <TabsTrigger value="meeting"   className="gap-1.5"><ClipboardList className="w-3.5 h-3.5" />Meeting Info {meetingFilled > 0 && `(${meetingFilled})`}</TabsTrigger>
         <TabsTrigger value="documents" className="gap-1.5"><FileText className="w-3.5 h-3.5" />Docs {documents.length > 0 && `(${documents.length})`}</TabsTrigger>
         <TabsTrigger value="tasks"     className="gap-1.5"><CheckSquare className="w-3.5 h-3.5" />Tasks {tasks.length > 0 && `(${tasks.length})`}</TabsTrigger>
         <TabsTrigger value="activity"  className="gap-1.5"><Activity className="w-3.5 h-3.5" />Activity</TabsTrigger>
@@ -244,6 +252,15 @@ export function ShowDetailClient({
           showId={showId}
           showDate={show.show_date}
           initialItems={checklist}
+          profile={profile ?? null}
+        />
+      </TabsContent>
+
+      {/* Meeting Info */}
+      <TabsContent value="meeting">
+        <MeetingInfo
+          showId={showId}
+          initial={show.meeting_info ?? null}
           profile={profile ?? null}
         />
       </TabsContent>
