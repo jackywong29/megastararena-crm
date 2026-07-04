@@ -15,10 +15,11 @@ Internal CRM for MegaStar Arena KL, **live in production** — real staff use it
 - **Read-only introspection (2026-07-04):** `npm run db:schema` connects as the `claude_readonly` Postgres role (SELECT-only, schema metadata only) and regenerates `supabase/schema-current.md` — the ground-truth snapshot of the live DB (tables, columns, **CHECK constraints**, RLS policies). **Never reconstruct DB state by replaying the v-files** — read the snapshot, and regenerate it whenever in doubt or after Jacky confirms a migration ran.
 
 ## ⚠️ CHECK-constraint gotcha (two real production failures so far)
-Postgres CHECK constraints do **not** update when a TypeScript union gains a new value — inserts/updates then fail with `violates check constraint`. **Any time an enum value is added, run `npm run db:schema` and check that column in the CHECK-constraints section of `supabase/schema-current.md`**; if constrained, ship a migration using the drop-and-recreate pattern in `supabase/schema-v6.sql` / `schema-v7.sql`.
+Postgres CHECK constraints do **not** update when a TypeScript union gains a new value — inserts/updates then fail with `violates check constraint`. `npm run harness:check` now catches this drift automatically (it compares `types/index.ts` unions against `supabase/schema-current.md`; new unions must be added to its `ENUM_MAP`). When it flags drift, ship a migration using the drop-and-recreate pattern in `supabase/schema-v6.sql` / `schema-v7.sql`, have Jacky run it, then `npm run db:schema`.
 
 ## Code rules
-- Run `npx tsc --noEmit` and make sure it passes before telling Jacky a change is ready to push.
+- Run `npm run harness:check` and make sure it passes before telling Jacky a change is ready to push. It bundles the typecheck (`tsc --noEmit`), enum↔CHECK drift, DB-snapshot freshness, the mobile safe-area check, and a doc-size budget. Fix failures; surface warnings to Jacky.
+- A bug found in production **after** a batch was declared done is an **escape**: add a line to the Escapes log in PROJECT_STATUS.md and either add a check for it in `scripts/harness-check.mjs` or note why it can't be automated.
 - Next.js 16 uses `proxy.ts`, not `middleware.ts`. Per AGENTS.md, check `node_modules/next/dist/docs/` before assuming an API works like older Next.js.
 - Any new fixed-bottom mobile element must handle safe-area insets (`env(safe-area-inset-bottom)`) — follow the pattern in `components/MobileNav.tsx` and `app/dashboard/layout.tsx`. Content trapped behind the iOS Safari bottom bar has bitten twice.
 

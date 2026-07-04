@@ -68,4 +68,17 @@ staff role) → `v6` (event-dept constraint fix) → `v7` (notification-type fix
 - [ ] 2027 Islamic/lunar holiday dates are **estimates** pending official gazette — re-check closer to each date.
 - [ ] Historical past shows were never imported (staff re-enter manually for accuracy — by decision).
 - [ ] No push notifications / PWA — in-app bell only by design. Revisit only if staff stop checking the app.
-- [ ] Dev-workflow ideas parked from the 2026-07-04 session (no rush): branch + preview-deploy for big batches; a GitHub Action enforcing `tsc --noEmit`; slimming this file.
+- [ ] Dev-workflow ideas parked from the 2026-07-04 session (no rush): branch + preview-deploy for big batches; a GitHub Action running `npm run harness:check`; slimming this file. Also flagged but not built: extending `claude_readonly` to a few aggregate row counts for staff-adoption visibility (Jacky's call — it's staff data).
+
+---
+
+## Escapes log
+
+> One line per bug found in production **after** a batch was declared done. Every escape must end in
+> either a new check in `npm run harness:check` (see `scripts/harness-check.mjs`) or an explicit
+> "can't automate" note. **Escapes per batch trending down is the harness's real health metric** —
+> not commits, features, or doc length.
+
+- *(pre-log)* 2× enum added in TS but the DB CHECK constraint rejected inserts (`event` department → v6; `mention`/notification types → v7) — **automated:** enum↔CHECK drift check
+- *(pre-log)* 2× content trapped behind the iOS bottom bar (mobile nav, Create Show button) — **automated:** safe-area check
+- *(pre-log)* Next Show hero card stuck on a past never-marked-Done show — **can't automate** (date/state logic bug); class lesson: review time-dependent logic against "what does this look like next week?"

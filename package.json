@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:schema": "node scripts/db-schema.mjs"
+    "db:schema": "node scripts/db-schema.mjs",
+    "harness:check": "node scripts/harness-check.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.0",
