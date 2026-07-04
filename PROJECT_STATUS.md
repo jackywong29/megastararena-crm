@@ -1,10 +1,11 @@
 # MegaStar Arena CRM — Project Status
 
-> **Living document.** This is the running memory of the project. Claude reads it automatically at the
-> start of every session (it's imported by `CLAUDE.md`). Edit it freely — anything here is treated as
-> project context. Ask Claude to "update PROJECT_STATUS.md" at the end of a work session to keep it current.
+> **Living document — status only.** Claude reads it automatically at the start of every session (it's
+> imported by `CLAUDE.md`). Standing rules (workflow, migrations process, gotchas, code rules) live in
+> `CLAUDE.md`; this file tracks *what exists and what's next*. Ask Claude to "update PROJECT_STATUS.md"
+> at the end of a work session to keep it current.
 
-**Last updated:** 2026-07-03
+**Last updated:** 2026-07-04
 
 ---
 
@@ -14,7 +15,7 @@ WhatsApp-groups + Google-Calendar workflow where documents and decisions kept ge
 use** — staff are actively being onboarded.
 
 - **Repo:** github.com/jackywong29/megastararena-crm · deployed on **Vercel**
-- **Location on disk:** `/Users/jacky/Desktop/MSA x Claude/megastar-crm`
+- **Location on disk:** `/Users/jacky/Desktop/Claude/megastar-crm`
 - **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (auth/DB/storage/realtime) · Radix UI
 - **Supabase project:** `ohtkqgvzagipbmpyozae` (Singapore region)
 - **Auth:** Google SSO only, **invite-only** via the `allowed_emails` table + `is_active` flag
@@ -49,15 +50,6 @@ use** — staff are actively being onboarded.
 
 ---
 
-## ⚠️ Recurring gotcha — DB CHECK constraints don't follow TS enums
-Postgres CHECK constraints on `profiles.department`, `profiles.role`, and `notifications.type` do **not**
-auto-update when a TypeScript union gains a new value. This caused two real failures (adding the `event`
-department; adding `leave_update`/`new_post` notification types). Fix pattern (see `schema-v6.sql` /
-`schema-v7.sql`): a migration that introspects `pg_constraint` to find & drop the constraint by inspection,
-then recreates it with the new values. **Check for this any time you add an enum value.**
-
----
-
 ## Database migrations (run manually in Supabase SQL Editor, in order)
 `schema.sql` → `v2` → `v3` (leave) → `v4` (post pins/reactions/comments) → `v5` (allowed_emails, is_active,
 staff role) → `v6` (event-dept constraint fix) → `v7` (notification-type fix + public holidays) →
@@ -65,9 +57,6 @@ staff role) → `v6` (event-dept constraint fix) → `v7` (notification-type fix
 `v10` (meeting_date/meeting_time on shows) → `v11` (`mention` notification type + posts/post_comments `mentions` arrays) →
 `v12` (`meeting_info` JSONB on shows — the Meeting Info spec sheet) →
 `v13` (Malaysia/KL public holidays 2028–2036).
-
-There is no migration runner — Jacky pastes each file's SQL into the Supabase SQL Editor himself. When
-adding a migration, also paste the SQL inline in chat (he can't always open the file directly).
 
 ---
 
@@ -78,10 +67,3 @@ adding a migration, also paste the SQL inline in chat (he can't always open the 
 - [ ] 2027 Islamic/lunar holiday dates are **estimates** pending official gazette — re-check closer to each date.
 - [ ] Historical past shows were never imported (staff re-enter manually for accuracy — by decision).
 - [ ] No push notifications / PWA — in-app bell only by design. Revisit only if staff stop checking the app.
-
----
-
-## Working preferences (Jacky)
-- **Draft first:** for any nontrivial batch of changes, lay out the plan in chat and wait for confirmation before coding. Bug reports get fixed immediately (no draft).
-- Non-technical but capable — give copy-paste SQL inline, step-by-step browser instructions.
-- Computer use off by default. Keep things simple first, add features later.
