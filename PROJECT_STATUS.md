@@ -61,6 +61,7 @@ staff role) → `v6` (event-dept constraint fix) → `v7` (notification-type fix
 ---
 
 ## Open items / what's next
+- [x] **`claude_readonly` introspection live (2026-07-04).** Jacky ran the CREATE ROLE SQL; `npm run db:schema` now regenerates `supabase/schema-current.md` from the live DB (see CLAUDE.md → Migrations & DB visibility). First snapshot: 14 tables, 11 CHECK constraints, 47 RLS policies. Two doc-vs-DB drifts surfaced: `shows.stage` CHECK still allows `day_of` (harmless; optional cleanup migration someday), and `profiles.role` has **no** CHECK constraint (old gotcha note was stale).
 - [x] **schema-v12 + v13 run & deployed (2026-07-03).** Meeting Info tab, calendar connected phase-bar, 10-year range, and holidays through 2036 are all live and confirmed working. Thaipusam/Wesak/Deepavali still need adding from the gazette a few years at a time.
 - [x] **schema-v9/v10/v11 run & deployed (2026-07-01).** Jacky confirmed v9–v11 are applied in Supabase; the full feature batch (Sales SOP, hidden Leave, Next Show hero, SOP-in-My-Tasks, Team directory, @mentions) + the hero "upcoming-only" fix are pushed to `main` and live on Vercel.
 - [ ] Staff feedback backlog (remaining): email notifications (Resend) — esp. email-on-@mention → doc-approval workflow → direct messaging/chat. Leave system may also be re-enabled. *(Team directory + in-app @mentions: done 2026-06-30.)*
