@@ -68,3 +68,4 @@ staff role) → `v6` (event-dept constraint fix) → `v7` (notification-type fix
 - [ ] 2027 Islamic/lunar holiday dates are **estimates** pending official gazette — re-check closer to each date.
 - [ ] Historical past shows were never imported (staff re-enter manually for accuracy — by decision).
 - [ ] No push notifications / PWA — in-app bell only by design. Revisit only if staff stop checking the app.
+- [ ] Dev-workflow ideas parked from the 2026-07-04 session (no rush): branch + preview-deploy for big batches; a GitHub Action enforcing `tsc --noEmit`; slimming this file.
