@@ -72,8 +72,7 @@ adding a migration, also paste the SQL inline in chat (he can't always open the 
 ---
 
 ## Open items / what's next
-- [ ] **Run `schema-v13.sql`** in Supabase (seeds MY/KL holidays 2028–2036). Optional — the calendar works without it; it just fills future holidays. Thaipusam/Wesak/Deepavali still need adding from the gazette a few years at a time.
-- [ ] **Run `schema-v12.sql`** in Supabase (adds `meeting_info` JSONB to shows). Until it's run, **saving the Meeting Info tab will error**. (Calendar visual changes need no migration.)
+- [x] **schema-v12 + v13 run & deployed (2026-07-03).** Meeting Info tab, calendar connected phase-bar, 10-year range, and holidays through 2036 are all live and confirmed working. Thaipusam/Wesak/Deepavali still need adding from the gazette a few years at a time.
 - [x] **schema-v9/v10/v11 run & deployed (2026-07-01).** Jacky confirmed v9–v11 are applied in Supabase; the full feature batch (Sales SOP, hidden Leave, Next Show hero, SOP-in-My-Tasks, Team directory, @mentions) + the hero "upcoming-only" fix are pushed to `main` and live on Vercel.
 - [ ] Staff feedback backlog (remaining): email notifications (Resend) — esp. email-on-@mention → doc-approval workflow → direct messaging/chat. Leave system may also be re-enabled. *(Team directory + in-app @mentions: done 2026-06-30.)*
 - [ ] 2027 Islamic/lunar holiday dates are **estimates** pending official gazette — re-check closer to each date.
