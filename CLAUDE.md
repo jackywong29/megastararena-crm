@@ -6,7 +6,7 @@ Internal CRM for MegaStar Arena KL, **live in production** — real staff use it
 
 ## Working with Jacky
 - **Draft first:** for any nontrivial batch of changes, lay out the plan in chat and wait for confirmation before coding. Bug reports are the exception — fix immediately, no draft.
-- Jacky is non-technical but capable — give step-by-step browser instructions, keep things simple first, add features later.
+- Jacky doesn't write code but is operationally technical — he runs all SQL and deploy checks himself. Don't oversimplify explanations; give explicit step-by-step instructions for browser/setup tasks, keep things simple first, add features later.
 - **Always paste SQL inline in chat**, not just a file path — he copies it into the Supabase SQL Editor himself and can't always open files directly.
 
 ## Migrations & DB visibility
