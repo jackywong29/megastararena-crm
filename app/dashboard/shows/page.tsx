@@ -2,32 +2,26 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { PipelineBoard } from '@/components/shows/PipelineBoard'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { canAddShows } from '@/lib/utils'
-import type { Profile } from '@/types'
 
 export default async function ShowsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
+  const [profile, unreadCount, { data: shows }, { data: tasks }] = await Promise.all([
+    getProfile(),
+    getUnreadCount(),
+    supabase.from('shows').select('*').order('show_date', { ascending: true, nullsFirst: false }),
+    supabase.from('tasks').select('*'),
+  ])
 
-  const { data: shows } = await supabase
-    .from('shows')
-    .select('*')
-    .order('show_date', { ascending: true, nullsFirst: false })
-
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('*')
-
-  const p = profile as Profile | null
+  const p = profile
   const allowAddShows = canAddShows(p)
 
   return (

@@ -1,24 +1,24 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { StaffManager } from '@/components/staff/StaffManager'
 import type { Profile, AllowedEmail } from '@/types'
 
 export default async function StaffPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const p = profile as Profile | null
+  const p = await getProfile()
 
   // Admin only
   if (p?.role !== 'admin') redirect('/dashboard')
 
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
-
-  const { data: profiles } = await supabase.from('profiles').select('*').order('full_name', { ascending: true })
-  const { data: allowed } = await supabase.from('allowed_emails').select('*')
+  const [unreadCount, { data: profiles }, { data: allowed }] = await Promise.all([
+    getUnreadCount(),
+    supabase.from('profiles').select('*').order('full_name', { ascending: true }),
+    supabase.from('allowed_emails').select('*'),
+  ])
 
   return (
     <>

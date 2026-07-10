@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { ShowDetailClient } from './ShowDetailClient'
 import { EditShowDialog } from '@/components/shows/EditShowDialog'
@@ -15,42 +15,50 @@ import type { Profile, Show, Task, Document, UserRole, ShowChecklistItem } from 
 
 export default async function ShowDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
+  // All independent — one parallel batch instead of six sequential trips.
+  const [
+    profile,
+    unreadCount,
+    { data: show },
+    { data: tasks },
+    { data: documents },
+    { data: activity },
+    checklistRes,
+  ] = await Promise.all([
+    getProfile(),
+    getUnreadCount(),
+    supabase.from('shows').select('*').eq('id', id).single(),
+    supabase
+      .from('tasks')
+      .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
+      .eq('show_id', id)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('documents')
+      .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
+      .eq('show_id', id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('activity_log')
+      .select('*, profiles(full_name, email)')
+      .eq('show_id', id)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    supabase
+      .from('show_checklist_items')
+      .select('*')
+      .eq('show_id', id)
+      .order('position', { ascending: true }),
+  ])
 
-  const { data: show } = await supabase.from('shows').select('*').eq('id', id).single()
   if (!show) notFound()
 
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
-    .eq('show_id', id)
-    .order('created_at', { ascending: true })
-
-  const { data: documents } = await supabase
-    .from('documents')
-    .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
-    .eq('show_id', id)
-    .order('created_at', { ascending: false })
-
-  const { data: activity } = await supabase
-    .from('activity_log')
-    .select('*, profiles(full_name, email)')
-    .eq('show_id', id)
-    .order('created_at', { ascending: false })
-    .limit(20)
-
   // Booking SOP checklist — seed from the template the first time a show is opened
-  let { data: checklist } = await supabase
-    .from('show_checklist_items')
-    .select('*')
-    .eq('show_id', id)
-    .order('position', { ascending: true })
-
+  let checklist = checklistRes.data
   if (!checklist || checklist.length === 0) {
     await supabase.from('show_checklist_items').insert(buildChecklistRows(id, user.id))
     const seeded = await supabase
@@ -61,7 +69,7 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
     checklist = seeded.data
   }
 
-  const p = profile as Profile | null
+  const p = profile
   const s = show as Show
   const stageColor = STAGE_COLORS[s.stage]
   const typeColor = EVENT_TYPE_COLORS[s.event_type]

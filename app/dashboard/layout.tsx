@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { TutorialModal } from '@/components/tutorial/TutorialModal'
@@ -9,18 +9,13 @@ import { canAddShows } from '@/lib/utils'
 import type { Profile } from '@/types'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
-  let { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  let p = profile as Profile | null
+  // Profile + unread count are independent — fetch together. Both are cached
+  // per-request, so pages re-using them cost no extra round trips.
+  const [profile, unreadCount] = await Promise.all([getProfile(), getUnreadCount()])
+  let p = profile
 
   // ── Access gate ──────────────────────────────────────────
   // Deactivated accounts are locked out immediately.
@@ -30,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // if the allowed_emails table doesn't exist yet (migration not run), so it
   // never locks out existing users before schema-v5 is applied.
   if (p && p.role !== 'admin') {
+    const supabase = await getClient()
     const { data: allow, error } = await supabase
       .from('allowed_emails')
       .select('email')
@@ -40,6 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   // First login with no profile yet: create it from the invite, else deny.
   if (!p) {
+    const supabase = await getClient()
     const { data: allow, error } = await supabase
       .from('allowed_emails')
       .select('*')
@@ -60,19 +57,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
   }
 
-  const { count: unreadCount } = await supabase
-    .from('notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('read', false)
-
   const showFab = canAddShows(p)
   const isAdmin = p?.role === 'admin'
 
   return (
     <div className="flex h-full min-h-dvh bg-zinc-950">
       <div className="hidden md:flex">
-        <Sidebar profile={p} unreadCount={unreadCount ?? 0} />
+        <Sidebar profile={p} unreadCount={unreadCount} />
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
@@ -89,7 +80,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </Link>
       )}
 
-      <MobileNav unreadCount={unreadCount ?? 0} isAdmin={isAdmin} />
+      <MobileNav unreadCount={unreadCount} isAdmin={isAdmin} />
       <TutorialModal />
     </div>
   )

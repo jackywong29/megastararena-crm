@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { ProfileForm } from '@/components/profile/ProfileForm'
 import type { Profile, Post } from '@/types'
@@ -16,20 +16,21 @@ function formatTimeAgo(dateStr: string) {
 }
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
+  const [profile, unreadCount, { data: posts }] = await Promise.all([
+    getProfile(),
+    getUnreadCount(),
+    supabase
+      .from('posts')
+      .select('*')
+      .eq('created_by', user.id)
+      .order('created_at', { ascending: false }),
+  ])
 
   if (!profile) redirect('/login')
-
-  const { data: posts } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('created_by', user.id)
-    .order('created_at', { ascending: false })
 
   const p = profile as Profile
   const userPosts = (posts ?? []) as Post[]

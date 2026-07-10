@@ -1,19 +1,18 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { MyTasksList } from '@/components/tasks/MyTasksList'
 import { canEditSop } from '@/lib/utils'
-import type { Profile } from '@/types'
 
 export default async function TasksPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
-
-  const p = profile as Profile | null
+  // The task query is scoped by the profile's department, so profile comes
+  // first; everything after runs in one parallel batch.
+  const [profile, unreadCount] = await Promise.all([getProfile(), getUnreadCount()])
+  const p = profile
 
   let query = supabase
     .from('tasks')
@@ -24,18 +23,19 @@ export default async function TasksPage() {
     query = query.eq('department', p.department)
   }
 
-  const { data: tasks } = await query
-
   // Sales + Admin also see open Booking SOP steps across all shows here.
-  let sopItems: any[] = []
-  if (canEditSop(p)) {
-    const { data } = await supabase
-      .from('show_checklist_items')
-      .select('id, title, section, due_date, relative_due, show_id, shows(id, title, show_date, stage)')
-      .eq('is_done', false)
-      .eq('is_na', false)
-    sopItems = data ?? []
-  }
+  const sopQuery = canEditSop(p)
+    ? supabase
+        .from('show_checklist_items')
+        .select('id, title, section, due_date, relative_due, show_id, shows(id, title, show_date, stage)')
+        .eq('is_done', false)
+        .eq('is_na', false)
+    : Promise.resolve({ data: null })
+
+  const [{ data: tasks }, { data: sopData }] = await Promise.all([query, sopQuery]) as [
+    { data: any[] | null }, { data: any[] | null }
+  ]
+  const sopItems: any[] = sopData ?? []
 
   return (
     <>

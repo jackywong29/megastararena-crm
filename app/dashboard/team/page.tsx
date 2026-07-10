@@ -1,23 +1,21 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { TeamDirectory } from '@/components/team/TeamDirectory'
 import type { Profile } from '@/types'
 
 export default async function TeamPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
+  const [profile, unreadCount, { data: profiles }] = await Promise.all([
+    getProfile(),
+    getUnreadCount(),
+    supabase.from('profiles').select('*').order('full_name', { ascending: true }),
+  ])
 
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('full_name', { ascending: true })
-
-  const p = profile as Profile | null
+  const p = profile
   const people = ((profiles ?? []) as Profile[]).filter(x => x.is_active !== false)
 
   return (

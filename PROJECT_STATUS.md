@@ -5,7 +5,7 @@
 > `CLAUDE.md`; this file tracks *what exists and what's next*. Ask Claude to "update PROJECT_STATUS.md"
 > at the end of a work session to keep it current.
 
-**Last updated:** 2026-07-04
+**Last updated:** 2026-07-10
 
 ---
 
@@ -47,6 +47,7 @@ use** — staff are actively being onboarded.
 - **Calendar** — Monday-first, scrollable month-tab strip (now runs **6 months back → 10 years forward**, with a **year dropdown** for quick jumps), Malaysia/KL public holidays. Shows are coloured by **stage only**: 🟢 Inquiry/soft-book = green, 🔴 Confirmed = brand red, past/Done = greyed; event-category colours removed. A show's **Setup → Rehearsal → Show → Dismantle** render as **one connected stage-coloured bar** (updated 2026-07-03): a full-bleed strip per day, rounded only on the run's ends so consecutive days join into a single line, with an **icon + label** per phase (Setup/Rehearsal/Show/Dismantle) — the Show day uses the solid shade. Phases only extend the bar when their date differs from the show date (single-day show = one "Show" block). Holidays seeded **2026–2036** (schema-v13): fixed-date + Agong + CNY exact/confident; Islamic holidays via tabular calendar (±1 day estimate); Thaipusam/Wesak/Deepavali intentionally not seeded past 2027 (can't be computed reliably — add from gazette).
 - **Mobile** — bottom nav + "More" sheet; safe-area-inset handling so content/buttons aren't trapped behind the nav bar or iOS Safari URL bar.
 - **Other** — tutorial modal, header live search, clickable dashboard stats, Mission/Vision/Values page. Legal entity name: **"MegaStar Arena KL Sdn Bhd"**.
+- **Performance pass (2026-07-10)** — Vercel functions pinned to Singapore next to the DB (`vercel.json` → `sin1`); per-request cached `getAuthUser`/`getProfile`/`getUnreadCount` helpers (`lib/supabase/cached.ts`) shared by layout + every page (use these in new server components, don't re-query); independent queries parallelised with `Promise.all` on all dashboard pages; `app/dashboard/loading.tsx` skeleton gives instant nav feedback. Calendar fetches only the columns it renders.
 
 ---
 

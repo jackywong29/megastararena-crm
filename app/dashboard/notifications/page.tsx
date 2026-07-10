@@ -1,22 +1,23 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { NotificationList } from '@/components/notifications/NotificationBell'
 import type { Profile } from '@/types'
 
 export default async function NotificationsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-
-  const { data: notifications } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(50)
+  const [profile, { data: notifications }] = await Promise.all([
+    getProfile(),
+    supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50),
+  ])
 
   const unread = (notifications ?? []).filter(n => !n.read).length
 

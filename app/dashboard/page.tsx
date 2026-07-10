@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { PostsFeed } from '@/components/home/PostsFeed'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,56 +12,70 @@ import type { MentionPerson } from '@/lib/mentions'
 import type { Profile, Post } from '@/types'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
-
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
-
-  const { count: totalShows } = await supabase.from('shows').select('*', { count: 'exact', head: true })
-  const { count: confirmedShows } = await supabase.from('shows').select('*', { count: 'exact', head: true }).eq('stage', 'confirmed')
-  const { count: pendingTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done')
-  const { count: inquiries } = await supabase.from('shows').select('*', { count: 'exact', head: true }).eq('stage', 'inquiry')
-
-  // Try the enriched query (reactions + comments). If those tables don't
-  // exist yet (migration not run), fall back to a plain posts query so the
-  // feed never breaks.
-  let posts: Post[] | null = null
-  const enriched = await supabase
-    .from('posts')
-    .select(`
-      *,
-      profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at),
-      post_reactions(id, post_id, user_id, emoji, created_at),
-      post_comments(id, post_id, user_id, content, created_at, updated_at, profiles(id, full_name, email, avatar_url))
-    `)
-    .order('created_at', { ascending: false })
-    .limit(30)
-
-  if (enriched.error) {
-    const basic = await supabase
-      .from('posts')
-      .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
-      .order('created_at', { ascending: false })
-      .limit(30)
-    posts = (basic.data ?? []) as Post[]
-  } else {
-    posts = (enriched.data ?? []) as Post[]
-  }
+  const supabase = await getClient()
 
   // Only shows dated today or later count as "upcoming" — so a past show that
   // simply hasn't been marked Done yet never sticks in the hero card. Date in
   // KL time so the cutoff flips at local midnight, not UTC.
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })
-  const { data: upcomingShows } = await supabase
-    .from('shows')
-    .select('*')
-    .neq('stage', 'done')
-    .not('show_date', 'is', null)
-    .gte('show_date', today)
-    .order('show_date', { ascending: true })
-    .limit(4)
+
+  // Try the enriched query (reactions + comments). If those tables don't
+  // exist yet (migration not run), fall back to a plain posts query so the
+  // feed never breaks.
+  const fetchPosts = async (): Promise<Post[]> => {
+    const enriched = await supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at),
+        post_reactions(id, post_id, user_id, emoji, created_at),
+        post_comments(id, post_id, user_id, content, created_at, updated_at, profiles(id, full_name, email, avatar_url))
+      `)
+      .order('created_at', { ascending: false })
+      .limit(30)
+    if (!enriched.error) return (enriched.data ?? []) as Post[]
+    const basic = await supabase
+      .from('posts')
+      .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
+      .order('created_at', { ascending: false })
+      .limit(30)
+    return (basic.data ?? []) as Post[]
+  }
+
+  // Everything below is independent — fire it all in one parallel batch.
+  const [
+    profile,
+    unreadCount,
+    { count: totalShows },
+    { count: confirmedShows },
+    { count: pendingTasks },
+    { count: inquiries },
+    posts,
+    { data: upcomingShows },
+    { data: peopleRaw },
+  ] = await Promise.all([
+    getProfile(),
+    getUnreadCount(),
+    supabase.from('shows').select('*', { count: 'exact', head: true }),
+    supabase.from('shows').select('*', { count: 'exact', head: true }).eq('stage', 'confirmed'),
+    supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done'),
+    supabase.from('shows').select('*', { count: 'exact', head: true }).eq('stage', 'inquiry'),
+    fetchPosts(),
+    supabase
+      .from('shows')
+      .select('*')
+      .neq('stage', 'done')
+      .not('show_date', 'is', null)
+      .gte('show_date', today)
+      .order('show_date', { ascending: true })
+      .limit(4),
+    supabase
+      .from('profiles')
+      .select('id, full_name, email, avatar_url, department, is_active')
+      .order('full_name', { ascending: true }),
+  ])
 
   // The soonest upcoming show drives the home hero card — pull its open tasks + open SOP steps.
   const nextShow = upcomingShows?.[0] ?? null
@@ -76,11 +90,6 @@ export default async function DashboardPage() {
     nextSop = sRes.data ?? []
   }
 
-  // Active staff for the @mention picker in the team feed.
-  const { data: peopleRaw } = await supabase
-    .from('profiles')
-    .select('id, full_name, email, avatar_url, department, is_active')
-    .order('full_name', { ascending: true })
   const people = (peopleRaw ?? []).filter(x => x.is_active !== false) as MentionPerson[]
 
   const p = profile as Profile | null

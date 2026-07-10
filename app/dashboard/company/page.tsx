@@ -1,21 +1,22 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { CompanyFileList } from '@/components/company/CompanyFileList'
 import type { Profile, CompanyFile } from '@/types'
 
 export default async function CompanyPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+  const supabase = await getClient()
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { count: unreadCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
-
-  const { data: files } = await supabase
-    .from('company_files')
-    .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
-    .order('created_at', { ascending: false })
+  const [profile, unreadCount, { data: files }] = await Promise.all([
+    getProfile(),
+    getUnreadCount(),
+    supabase
+      .from('company_files')
+      .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
+      .order('created_at', { ascending: false }),
+  ])
 
   return (
     <>
