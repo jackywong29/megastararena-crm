@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, CalendarDays, CheckSquare, Calendar, MoreHorizontal, X, Bell, Heart, FolderOpen, User, LogOut, Users } from 'lucide-react'
+import { Home, CalendarDays, CheckSquare, Calendar, MoreHorizontal, X, Bell, Heart, FolderOpen, User, LogOut, Users, Megaphone } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -22,15 +22,17 @@ const baseMoreItems = [
   { href: '/dashboard/profile',       label: 'My Profile',       icon: User },
 ]
 
-export function MobileNav({ unreadCount = 0, isAdmin = false }: { unreadCount?: number; isAdmin?: boolean }) {
+export function MobileNav({ unreadCount = 0, isAdmin = false, canBroadcast = false }: { unreadCount?: number; isAdmin?: boolean; canBroadcast?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
   const [moreOpen, setMoreOpen] = useState(false)
 
-  const moreItems = isAdmin
-    ? [...baseMoreItems, { href: '/dashboard/staff', label: 'Staff & Access', icon: Users }]
-    : baseMoreItems
+  const moreItems = [
+    ...(canBroadcast ? [{ href: '/dashboard/broadcasts', label: 'Broadcasts', icon: Megaphone }] : []),
+    ...baseMoreItems,
+    ...(isAdmin ? [{ href: '/dashboard/staff', label: 'Staff & Access', icon: Users }] : []),
+  ]
 
   const handleLogout = async () => {
     setMoreOpen(false)

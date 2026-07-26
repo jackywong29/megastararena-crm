@@ -1,7 +1,7 @@
 # Live database schema — ohtkqgvzagipbmpyozae
 
 > **GENERATED FILE — do not edit.** Regenerate with `npm run db:schema`.
-> Snapshot taken: 2026-07-26T16:47:43.527Z
+> Snapshot taken: 2026-07-26T17:02:48.122Z
 > This reflects the *actual* database, not the intent of the schema-v*.sql history.
 
 ## ⚠️ All CHECK constraints (verify before adding any enum value)
@@ -18,7 +18,7 @@
 - `tasks` — `tasks_department_check`: CHECK ((department = ANY (ARRAY['management'::text, 'finance'::text, 'operations'::text, 'tech'::text, 'sales'::text, 'event'::text])))
 - `tasks` — `tasks_status_check`: CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'done'::text])))
 
-## Tables (14)
+## Tables (15)
 
 ### activity_log
 
@@ -70,6 +70,34 @@ RLS: enabled
 
 Indexes:
 - CREATE UNIQUE INDEX allowed_emails_pkey ON public.allowed_emails USING btree (email)
+
+### broadcasts
+
+| column | type | nullable | default |
+|---|---|---|---|
+| id | uuid | NO | gen_random_uuid() |
+| subject | text | NO |  |
+| body | text | NO |  |
+| audience | text | NO | 'all'::text |
+| recipient_count | integer | NO | 0 |
+| status | text | NO | 'draft'::text |
+| created_by | uuid | YES |  |
+| created_at | timestamp with time zone | NO | now() |
+| updated_at | timestamp with time zone | NO | now() |
+
+Constraints:
+- FOREIGN KEY `broadcasts_created_by_fkey`: FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+- PRIMARY KEY `broadcasts_pkey`: PRIMARY KEY (id)
+
+RLS: enabled
+- policy `Authenticated can delete broadcasts` (DELETE to {authenticated}) using: true
+- policy `Authenticated can insert broadcasts` (INSERT to {authenticated}) check: true
+- policy `Authenticated can update broadcasts` (UPDATE to {authenticated}) using: true
+- policy `Authenticated can view broadcasts` (SELECT to {authenticated}) using: true
+
+Indexes:
+- CREATE UNIQUE INDEX broadcasts_pkey ON public.broadcasts USING btree (id)
+- CREATE INDEX idx_broadcasts_created_at ON public.broadcasts USING btree (created_at DESC)
 
 ### company_files
 

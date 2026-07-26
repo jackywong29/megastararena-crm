@@ -4,9 +4,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle, Users
+  Home, CalendarDays, Bell, LogOut, Calendar, Heart, FolderOpen, CheckSquare, HelpCircle, Users, Megaphone
 } from 'lucide-react'
-import { cn, getInitials, DEPARTMENT_LABELS } from '@/lib/utils'
+import { cn, getInitials, DEPARTMENT_LABELS, canSendBroadcasts } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/types'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -46,6 +46,7 @@ export function Sidebar({ profile, unreadCount = 0 }: SidebarProps) {
       : pathname === href || pathname.startsWith(href + '/')
 
   const isAdmin = profile?.role === 'admin'
+  const canBroadcast = canSendBroadcasts(profile)
 
   return (
     <aside className="w-60 flex-shrink-0 flex flex-col bg-black min-h-screen border-r border-zinc-900">
@@ -81,6 +82,22 @@ export function Sidebar({ profile, unreadCount = 0 }: SidebarProps) {
             </Link>
           )
         })}
+
+        {/* Broadcasts — admin + department heads */}
+        {canBroadcast && (
+          <Link
+            href="/dashboard/broadcasts"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              isActive('/dashboard/broadcasts')
+                ? 'bg-[#E7191F] text-white'
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+            )}
+          >
+            <Megaphone className="w-4 h-4 flex-shrink-0" />
+            Broadcasts
+          </Link>
+        )}
 
         {/* Notifications */}
         <Link

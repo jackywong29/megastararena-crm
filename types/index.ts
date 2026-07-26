@@ -185,6 +185,18 @@ export interface CompanyFile {
   profiles?: Profile
 }
 
+export interface Broadcast {
+  id: string
+  subject: string
+  body: string
+  audience: string
+  recipient_count: number
+  status: string
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface PublicHoliday {
   id: string
   date: string

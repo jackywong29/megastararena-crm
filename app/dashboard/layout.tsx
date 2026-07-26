@@ -5,7 +5,7 @@ import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supaba
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { TutorialModal } from '@/components/tutorial/TutorialModal'
-import { canAddShows } from '@/lib/utils'
+import { canAddShows, canSendBroadcasts } from '@/lib/utils'
 import type { Profile } from '@/types'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +59,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const showFab = canAddShows(p)
   const isAdmin = p?.role === 'admin'
+  const canBroadcast = canSendBroadcasts(p)
 
   return (
     <div className="flex h-full min-h-dvh bg-zinc-950">
@@ -80,7 +81,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </Link>
       )}
 
-      <MobileNav unreadCount={unreadCount} isAdmin={isAdmin} />
+      <MobileNav unreadCount={unreadCount} isAdmin={isAdmin} canBroadcast={canBroadcast} />
       <TutorialModal />
     </div>
   )
