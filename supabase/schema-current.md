@@ -1,7 +1,7 @@
 # Live database schema — ohtkqgvzagipbmpyozae
 
 > **GENERATED FILE — do not edit.** Regenerate with `npm run db:schema`.
-> Snapshot taken: 2026-07-04T06:34:33.959Z
+> Snapshot taken: 2026-07-26T16:47:43.527Z
 > This reflects the *actual* database, not the intent of the schema-v*.sql history.
 
 ## ⚠️ All CHECK constraints (verify before adding any enum value)
