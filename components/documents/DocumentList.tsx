@@ -1,24 +1,20 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { FileText, FileImage, File, Download, Trash2, Upload, Loader2, FolderOpen } from 'lucide-react'
+import { Download, Trash2, Upload, Loader2, FolderOpen, Pencil, Check, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { cn, formatFileSize, formatDate, DOC_CATEGORY_LABELS, timeAgo } from '@/lib/utils'
+import { formatFileSize, DOC_CATEGORY_LABELS, timeAgo } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { FileThumb, kindLabel } from '@/components/files/FileThumb'
+import { FilePreview } from '@/components/files/FilePreview'
 import type { Document, DocumentCategory, Profile } from '@/types'
 
 interface DocumentListProps {
   showId: string
   initialDocs: Document[]
   profile: Profile | null
-}
-
-function fileIcon(type: string | null) {
-  if (!type) return <File className="w-4 h-4 text-zinc-600" />
-  if (type.startsWith('image/')) return <FileImage className="w-4 h-4 text-violet-400" />
-  if (type === 'application/pdf') return <FileText className="w-4 h-4 text-[#E7191F]" />
-  return <FileText className="w-4 h-4 text-blue-400" />
 }
 
 const CATEGORIES: DocumentCategory[] = [
@@ -42,6 +38,9 @@ export function DocumentList({ showId, initialDocs, profile }: DocumentListProps
   const [uploading, setUploading] = useState(false)
   const [uploadCategory, setUploadCategory] = useState<DocumentCategory>('other')
   const [error, setError] = useState<string | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const [preview, setPreview] = useState<Document | null>(null)
 
   const canUpload = profile?.role === 'admin' || profile?.role === 'department_head'
 
@@ -100,6 +99,15 @@ export function DocumentList({ showId, initialDocs, profile }: DocumentListProps
     setDocs(d => d.filter(x => x.id !== doc.id))
   }
 
+  // Rename changes the display name only — the stored file stays where it is.
+  const saveRename = async (doc: Document) => {
+    const name = renameDraft.trim()
+    setRenamingId(null)
+    if (!name || name === doc.name) return
+    setDocs(d => d.map(x => (x.id === doc.id ? { ...x, name } : x)))
+    await supabase.from('documents').update({ name }).eq('id', doc.id)
+  }
+
   const docsByCategory = CATEGORIES
     .map(cat => ({ cat, docs: docs.filter(d => d.category === cat) }))
     .filter(({ docs }) => docs.length > 0)
@@ -154,46 +162,106 @@ export function DocumentList({ showId, initialDocs, profile }: DocumentListProps
               <span className="ml-auto text-xs text-zinc-600">{catDocs.length} file{catDocs.length !== 1 ? 's' : ''}</span>
             </div>
             <div className="divide-y divide-zinc-800/50">
-              {catDocs.map(doc => (
-                <div key={doc.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/30 group transition-colors">
-                  <div className="flex-shrink-0">{fileIcon(doc.file_type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-zinc-300 truncate">{doc.name}</div>
-                    <div className="text-xs text-zinc-600 mt-0.5 flex items-center gap-2">
-                      {doc.file_size && <span>{formatFileSize(doc.file_size)}</span>}
-                      <span>·</span>
-                      <span>{timeAgo(doc.created_at)}</span>
-                      {doc.profiles && (
+              {catDocs.map(doc => {
+                const isRenaming = renamingId === doc.id
+                return (
+                  <div key={doc.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/30 group transition-colors">
+                    <button
+                      onClick={() => setPreview(doc)}
+                      title="Preview"
+                      className="flex-shrink-0 rounded-lg hover:ring-2 hover:ring-zinc-700 transition-all"
+                    >
+                      <FileThumb type={doc.file_type} name={doc.name} url={doc.file_url} />
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      {isRenaming ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={renameDraft}
+                            onChange={e => setRenameDraft(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveRename(doc)
+                              if (e.key === 'Escape') setRenamingId(null)
+                            }}
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <button onClick={() => saveRename(doc)} className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded" title="Save">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setRenamingId(null)} className="p-1.5 text-zinc-500 hover:bg-zinc-800 rounded" title="Cancel">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
                         <>
-                          <span>·</span>
-                          <span>{doc.profiles.full_name ?? doc.profiles.email}</span>
+                          <button
+                            onClick={() => setPreview(doc)}
+                            className="text-sm font-medium text-zinc-300 truncate hover:text-white transition-colors text-left w-full"
+                          >
+                            {doc.name}
+                          </button>
+                          <div className="text-xs text-zinc-600 mt-0.5 flex items-center gap-2 flex-wrap">
+                            <span>{kindLabel(doc.file_type, doc.name)}</span>
+                            {doc.file_size && <><span>·</span><span>{formatFileSize(doc.file_size)}</span></>}
+                            <span>·</span>
+                            <span>{timeAgo(doc.created_at)}</span>
+                            {doc.profiles && (
+                              <>
+                                <span>·</span>
+                                <span>{doc.profiles.full_name ?? doc.profiles.email}</span>
+                              </>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
+
+                    {!isRenaming && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canUpload && (
+                          <button
+                            onClick={() => { setRenamingId(doc.id); setRenameDraft(doc.name) }}
+                            className="p-1.5 text-zinc-600 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                            title="Rename"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                        <a
+                          href={doc.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                        <button
+                          onClick={() => handleDelete(doc)}
+                          className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <a
-                      href={doc.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </a>
-                    <button
-                      onClick={() => handleDelete(doc)}
-                      className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         ))
+      )}
+
+      {preview && (
+        <FilePreview
+          name={preview.name}
+          url={preview.file_url}
+          type={preview.file_type}
+          onClose={() => setPreview(null)}
+        />
       )}
     </div>
   )

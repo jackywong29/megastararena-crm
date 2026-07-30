@@ -38,14 +38,9 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
     stage: show.stage as ShowStage,
     show_date: show.show_date ?? '',
     setup_date: show.setup_date ?? '',
-    setup_time: show.setup_time ?? '',
     rehearsal_date: show.rehearsal_date ?? '',
-    rehearsal_time: show.rehearsal_time ?? '',
     show_time: show.show_time ?? '',
     teardown_date: show.teardown_date ?? '',
-    teardown_time: show.teardown_time ?? '',
-    meeting_date: show.meeting_date ?? '',
-    meeting_time: show.meeting_time ?? '',
     expected_attendance: show.expected_attendance?.toString() ?? '',
     notes: show.notes ?? '',
     internal_notes: show.internal_notes ?? '',
@@ -74,14 +69,9 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
       stage: form.stage,
       show_date: form.show_date || null,
       setup_date: form.setup_date || null,
-      setup_time: form.setup_time || null,
       rehearsal_date: form.rehearsal_date || null,
-      rehearsal_time: form.rehearsal_time || null,
       show_time: form.show_time || null,
       teardown_date: form.teardown_date || null,
-      teardown_time: form.teardown_time || null,
-      meeting_date: form.meeting_date || null,
-      meeting_time: form.meeting_time || null,
       expected_attendance: form.expected_attendance ? parseInt(form.expected_attendance) : null,
       notes: form.notes || null,
       internal_notes: form.internal_notes || null,
@@ -189,43 +179,26 @@ export function EditShowDialog({ show, userRole }: EditShowDialogProps) {
                 <Label>Show Date</Label>
                 <Input type="date" value={form.show_date} onChange={e => set('show_date', e.target.value)} />
               </div>
-              <p className="text-xs text-zinc-600">Leave a date blank if it&apos;s the same day as the show.</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className={fieldClass}>
+                <Label>Show Time</Label>
+                <Input type="time" value={form.show_time} onChange={e => set('show_time', e.target.value)} className="max-w-[160px]" />
+              </div>
+              <p className="text-xs text-zinc-600">
+                Setup, rehearsal and dismantle dates are only needed for multi-day shows — leave one blank if
+                it&apos;s the same day as the show. Detailed timings live in the <strong className="text-zinc-500">Meeting Info</strong> tab.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className={fieldClass}>
                   <Label>Setup Date</Label>
                   <Input type="date" value={form.setup_date} onChange={e => set('setup_date', e.target.value)} />
-                </div>
-                <div className={fieldClass}>
-                  <Label>Setup Time</Label>
-                  <Input type="time" value={form.setup_time} onChange={e => set('setup_time', e.target.value)} />
                 </div>
                 <div className={fieldClass}>
                   <Label>Rehearsal Date</Label>
                   <Input type="date" value={form.rehearsal_date} onChange={e => set('rehearsal_date', e.target.value)} />
                 </div>
                 <div className={fieldClass}>
-                  <Label>Rehearsal Time</Label>
-                  <Input type="time" value={form.rehearsal_time} onChange={e => set('rehearsal_time', e.target.value)} />
-                </div>
-                <div className={`${fieldClass} col-span-2`}>
-                  <Label>Show Time <span className="text-zinc-600">(uses Show Date above)</span></Label>
-                  <Input type="time" value={form.show_time} onChange={e => set('show_time', e.target.value)} className="max-w-[160px]" />
-                </div>
-                <div className={fieldClass}>
                   <Label>Dismantle Date</Label>
                   <Input type="date" value={form.teardown_date} onChange={e => set('teardown_date', e.target.value)} />
-                </div>
-                <div className={fieldClass}>
-                  <Label>Dismantle Time</Label>
-                  <Input type="time" value={form.teardown_time} onChange={e => set('teardown_time', e.target.value)} />
-                </div>
-                <div className={fieldClass}>
-                  <Label>Next Meeting Date</Label>
-                  <Input type="date" value={form.meeting_date} onChange={e => set('meeting_date', e.target.value)} />
-                </div>
-                <div className={fieldClass}>
-                  <Label>Next Meeting Time</Label>
-                  <Input type="time" value={form.meeting_time} onChange={e => set('meeting_time', e.target.value)} />
                 </div>
               </div>
             </div>

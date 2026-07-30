@@ -119,6 +119,27 @@ export function ShowDetailClient({
     ? MEETING_INFO_KEYS.filter(k => (mi.fields?.[k] ?? '').trim()).length + (mi.extras?.filter(e => e.value.trim()).length ?? 0)
     : 0
 
+  // Surface the handful of Meeting Info fields every department needs on the
+  // Overview tab. Values are free text (e.g. "8:30 PM", "TBC") — shown as-is.
+  const miField = (key: string) => (mi?.fields?.[key] ?? '').trim()
+  const pick = (entries: { key: string; label: string; highlight?: boolean }[]) =>
+    entries
+      .map(e => ({ label: e.label, value: miField(e.key), highlight: e.highlight ?? false }))
+      .filter(e => e.value !== '')
+
+  const runOfShow = pick([
+    { key: 'load_in_time',  label: 'Load in' },
+    { key: 'rehearsal_time', label: 'Rehearsal' },
+    { key: 'door_open',     label: 'Doors open' },
+    { key: 'show_start',    label: 'Show start', highlight: true },
+    { key: 'show_end',      label: 'Show end' },
+  ])
+  const facilities = pick([
+    { key: 'backdrop',           label: 'Backdrop' },
+    { key: 'booth_counter_open', label: 'Booth / counter open' },
+    { key: 'aircond',            label: 'Aircond' },
+  ])
+
   return (
     <Tabs defaultValue="overview">
       <TabsList className="w-full sm:w-auto">
@@ -168,65 +189,96 @@ export function ShowDetailClient({
           {/* Schedule */}
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5 space-y-3">
             <h3 className="font-semibold text-white text-sm">Schedule</h3>
+            {/* Every row shares the same icon + fixed label column so the
+                values line up in one clean column (they used to start at
+                different x-positions depending on whether a row had a label). */}
             {show.show_date && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Calendar className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                <span className="text-zinc-600 text-xs w-24 flex-shrink-0">Show Date</span>
                 <span className="text-zinc-300">{formatDate(show.show_date)}</span>
-              </div>
-            )}
-            {show.setup_time && (
-              <div className="flex items-center gap-2.5 text-sm">
-                <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-20">Setup</span>
-                <span className="text-zinc-300">
-                  {show.setup_date && show.setup_date !== show.show_date && `${formatDate(show.setup_date)} · `}
-                  {formatTime(show.setup_time)}
-                </span>
-              </div>
-            )}
-            {show.rehearsal_time && (
-              <div className="flex items-center gap-2.5 text-sm">
-                <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-20">Rehearsal</span>
-                <span className="text-zinc-300">
-                  {show.rehearsal_date && show.rehearsal_date !== show.show_date && `${formatDate(show.rehearsal_date)} · `}
-                  {formatTime(show.rehearsal_time)}
-                </span>
               </div>
             )}
             {show.show_time && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-20">Show</span>
+                <span className="text-zinc-600 text-xs w-24 flex-shrink-0">Show Time</span>
                 <span className="text-zinc-300">{formatTime(show.show_time)}</span>
               </div>
             )}
-            {show.teardown_time && (
-              <div className="flex items-center gap-2.5 text-sm">
-                <Clock className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-20">Dismantle</span>
-                <span className="text-zinc-300">
-                  {show.teardown_date && show.teardown_date !== show.show_date && `${formatDate(show.teardown_date)} · `}
-                  {formatTime(show.teardown_time)}
-                </span>
-              </div>
-            )}
-            {show.meeting_date && (
+            {show.setup_date && show.setup_date !== show.show_date && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Calendar className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                <span className="text-zinc-600 text-xs w-20">Next Meeting</span>
-                <span className="text-zinc-300">
-                  {formatDate(show.meeting_date)}{show.meeting_time && ` · ${formatTime(show.meeting_time)}`}
-                </span>
+                <span className="text-zinc-600 text-xs w-24 flex-shrink-0">Setup</span>
+                <span className="text-zinc-300">{formatDate(show.setup_date)}</span>
+              </div>
+            )}
+            {show.rehearsal_date && show.rehearsal_date !== show.show_date && (
+              <div className="flex items-center gap-2.5 text-sm">
+                <Calendar className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                <span className="text-zinc-600 text-xs w-24 flex-shrink-0">Rehearsal</span>
+                <span className="text-zinc-300">{formatDate(show.rehearsal_date)}</span>
+              </div>
+            )}
+            {show.teardown_date && show.teardown_date !== show.show_date && (
+              <div className="flex items-center gap-2.5 text-sm">
+                <Calendar className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                <span className="text-zinc-600 text-xs w-24 flex-shrink-0">Dismantle</span>
+                <span className="text-zinc-300">{formatDate(show.teardown_date)}</span>
               </div>
             )}
             {show.expected_attendance && (
               <div className="flex items-center gap-2.5 text-sm">
                 <Users className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                <span className="text-zinc-600 text-xs w-24 flex-shrink-0">Attendance</span>
                 <span className="text-zinc-300">{show.expected_attendance.toLocaleString()} expected</span>
               </div>
             )}
           </div>
+
+          {/* Run of show — key timings + facilities pulled from Meeting Info,
+              so every department sees them without opening that tab. Empty
+              fields are skipped; the whole card hides if nothing is filled in. */}
+          {(runOfShow.length > 0 || facilities.length > 0) && (
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5 sm:col-span-2">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h3 className="font-semibold text-white text-sm">Run of Show</h3>
+                <span className="text-[11px] text-zinc-600">from Meeting Info</span>
+              </div>
+
+              {runOfShow.length > 0 && (
+                <div className="relative flex items-start overflow-x-auto pb-1">
+                  <div className="absolute top-[7px] left-[8%] right-[8%] h-px bg-zinc-800" />
+                  {runOfShow.map(({ label, value, highlight }) => (
+                    <div key={label} className="relative flex-1 min-w-[84px] flex flex-col items-center gap-2 text-center px-1">
+                      <span className={cn(
+                        'rounded-full flex-shrink-0',
+                        highlight ? 'w-3.5 h-3.5 bg-[#E7191F]' : 'w-2.5 h-2.5 bg-zinc-800 ring-2 ring-zinc-700 mt-0.5'
+                      )} />
+                      <span className="text-[11px] text-zinc-600 leading-tight">{label}</span>
+                      <span className={cn('text-xs font-medium leading-tight', highlight ? 'text-[#E7191F]' : 'text-zinc-300')}>
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {facilities.length > 0 && (
+                <div className={cn(
+                  'grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-3',
+                  runOfShow.length > 0 && 'mt-5 pt-4 border-t border-zinc-800/70'
+                )}>
+                  {facilities.map(({ label, value }) => (
+                    <div key={label} className="min-w-0">
+                      <div className="text-[11px] text-zinc-600">{label}</div>
+                      <div className="text-sm text-zinc-300 mt-0.5 break-words">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {show.notes && (
             <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
@@ -253,6 +305,7 @@ export function ShowDetailClient({
           showDate={show.show_date}
           initialItems={checklist}
           profile={profile ?? null}
+          documents={documents}
         />
       </TabsContent>
 

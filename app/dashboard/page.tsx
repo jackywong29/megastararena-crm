@@ -147,13 +147,6 @@ export default async function DashboardPage() {
                   </div>
                 </div>
 
-                {nextShow.meeting_date && (
-                  <div className="mt-4 flex items-center gap-2 bg-[#E7191F]/10 border border-[#E7191F]/20 rounded-lg px-3 py-2 text-sm">
-                    <Clock className="w-4 h-4 text-[#E7191F] flex-shrink-0" />
-                    <span className="text-zinc-300">Next meeting: <strong className="text-white">{formatDate(nextShow.meeting_date)}{nextShow.meeting_time && ` · ${formatTime(nextShow.meeting_time)}`}</strong></span>
-                  </div>
-                )}
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-zinc-800/70">
                   <div>
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-500 uppercase tracking-wide mb-2">

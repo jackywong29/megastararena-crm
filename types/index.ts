@@ -52,15 +52,14 @@ export interface Show {
   event_type: EventType
   stage: ShowStage
   show_date: string | null
+  // Setup / rehearsal / dismantle keep their DATES (they drive the calendar's
+  // connected phase bar). Their TIMES — and the old Next Meeting date/time —
+  // were removed 2026-07-27; the authoritative times now live in Meeting Info.
+  // The DB columns still exist but are no longer read or written.
   setup_date: string | null
-  setup_time: string | null
   rehearsal_date: string | null
-  rehearsal_time: string | null
   show_time: string | null
   teardown_date: string | null
-  teardown_time: string | null
-  meeting_date: string | null
-  meeting_time: string | null
   meeting_info: MeetingInfo | null
   expected_attendance: number | null
   notes: string | null
@@ -180,9 +179,18 @@ export interface CompanyFile {
   file_url: string
   file_size: number | null
   file_type: string | null
+  folder_id: string | null
   uploaded_by: string | null
   created_at: string
   profiles?: Profile
+}
+
+export interface CompanyFolder {
+  id: string
+  name: string
+  parent_id: string | null
+  created_by: string | null
+  created_at: string
 }
 
 export interface Broadcast {

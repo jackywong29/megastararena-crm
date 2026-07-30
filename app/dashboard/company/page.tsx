@@ -2,20 +2,21 @@ import { redirect } from 'next/navigation'
 import { getClient, getAuthUser, getProfile, getUnreadCount } from '@/lib/supabase/cached'
 import { Header } from '@/components/layout/Header'
 import { CompanyFileList } from '@/components/company/CompanyFileList'
-import type { Profile, CompanyFile } from '@/types'
+import type { Profile, CompanyFile, CompanyFolder } from '@/types'
 
 export default async function CompanyPage() {
   const user = await getAuthUser()
   if (!user) redirect('/login')
   const supabase = await getClient()
 
-  const [profile, unreadCount, { data: files }] = await Promise.all([
+  const [profile, unreadCount, { data: files }, { data: folders }] = await Promise.all([
     getProfile(),
     getUnreadCount(),
     supabase
       .from('company_files')
       .select('*, profiles(id, full_name, email, avatar_url, department, role, created_at, updated_at)')
       .order('created_at', { ascending: false }),
+    supabase.from('company_folders').select('*').order('name', { ascending: true }),
   ])
 
   return (
@@ -33,6 +34,7 @@ export default async function CompanyPage() {
 
         <CompanyFileList
           initialFiles={(files ?? []) as CompanyFile[]}
+          initialFolders={(folders ?? []) as CompanyFolder[]}
           currentProfile={profile as Profile | null}
         />
       </div>

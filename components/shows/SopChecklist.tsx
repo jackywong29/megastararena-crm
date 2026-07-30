@@ -1,32 +1,93 @@
 'use client'
 
-import { useState } from 'react'
-import { Check, Plus, Trash2, Clock, Ban, MessageSquarePlus } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Check, Plus, Trash2, Clock, Ban, MessageSquarePlus, Paperclip, Loader2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { cn, formatDate, canEditSop } from '@/lib/utils'
+import { cn, formatDate, formatFileSize, canEditSop } from '@/lib/utils'
 import { CHECKLIST_SECTIONS, computeRelativeDue } from '@/lib/sop'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { ShowChecklistItem, ChecklistSection, Profile } from '@/types'
+import { FileThumb } from '@/components/files/FileThumb'
+import { FilePreview } from '@/components/files/FilePreview'
+import type { ShowChecklistItem, ChecklistSection, Profile, Document } from '@/types'
 
 interface SopChecklistProps {
   showId: string
   showDate: string | null
   initialItems: ShowChecklistItem[]
   profile: Profile | null
+  documents?: Document[]
 }
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
 
-export function SopChecklist({ showId, showDate, initialItems, profile }: SopChecklistProps) {
+export function SopChecklist({ showId, showDate, initialItems, profile, documents = [] }: SopChecklistProps) {
   const supabase = createClient()
   const [items, setItems] = useState<ShowChecklistItem[]>(initialItems)
   const [addingFor, setAddingFor] = useState<ChecklistSection | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [noteFor, setNoteFor] = useState<string | null>(null)
   const [noteDraft, setNoteDraft] = useState('')
+  // Attachments: files uploaded against a checklist item also land in the
+  // show's Docs tab, so there's one source of truth for every file.
+  const [docs, setDocs] = useState<Document[]>(documents)
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null)
+  const [preview, setPreview] = useState<Document | null>(null)
+  const attachRef = useRef<HTMLInputElement>(null)
+  const attachTargetRef = useRef<string | null>(null)
 
   const canEdit = canEditSop(profile)
+  const docFor = (item: ShowChecklistItem) =>
+    item.document_id ? docs.find(d => d.id === item.document_id) ?? null : null
+
+  const pickAttachment = (itemId: string) => {
+    attachTargetRef.current = itemId
+    attachRef.current?.click()
+  }
+
+  const handleAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const itemId = attachTargetRef.current
+    if (!file || !itemId) return
+    setUploadingFor(itemId)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    const path = `${showId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    const { error: upErr } = await supabase.storage.from('documents').upload(path, file)
+
+    if (!upErr) {
+      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path)
+      const { data: doc } = await supabase.from('documents').insert({
+        show_id: showId,
+        name: file.name,
+        file_url: publicUrl,
+        file_size: file.size,
+        file_type: file.type,
+        category: 'other',
+        uploaded_by: user?.id ?? null,
+      }).select('*').single()
+
+      if (doc) {
+        setDocs(d => [doc as Document, ...d])
+        setItems(xs => xs.map(x => (x.id === itemId ? { ...x, document_id: doc.id } : x)))
+        await supabase.from('show_checklist_items')
+          .update({ document_id: doc.id, updated_at: new Date().toISOString() })
+          .eq('id', itemId)
+      }
+    }
+
+    setUploadingFor(null)
+    attachTargetRef.current = null
+    if (attachRef.current) attachRef.current.value = ''
+  }
+
+  // Unlink the file from the checklist item; the file itself stays in Docs.
+  const detach = async (itemId: string) => {
+    setItems(xs => xs.map(x => (x.id === itemId ? { ...x, document_id: null } : x)))
+    await supabase.from('show_checklist_items')
+      .update({ document_id: null, updated_at: new Date().toISOString() })
+      .eq('id', itemId)
+  }
 
   const toggleDone = async (item: ShowChecklistItem) => {
     if (!canEdit || item.is_na) return
@@ -139,6 +200,7 @@ export function SopChecklist({ showId, showDate, initialItems, profile }: SopChe
                 const due = item.due_date ?? computeRelativeDue(item.relative_due, showDate)
                 const overdue = !!due && !item.is_done && !item.is_na && due < todayStr()
                 const editingNote = noteFor === item.id
+                const attached = docFor(item)
 
                 return (
                   <div
@@ -195,6 +257,32 @@ export function SopChecklist({ showId, showDate, initialItems, profile }: SopChe
                         {item.note && !editingNote && (
                           <p className="text-xs text-zinc-500 mt-1 italic whitespace-pre-wrap">{item.note}</p>
                         )}
+                        {attached && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <button
+                              onClick={() => setPreview(attached)}
+                              className="flex items-center gap-2 min-w-0 group/att"
+                              title="Preview attachment"
+                            >
+                              <FileThumb type={attached.file_type} name={attached.name} url={attached.file_url} size="sm" />
+                              <span className="text-xs text-zinc-400 truncate group-hover/att:text-white transition-colors">
+                                {attached.name}
+                              </span>
+                              {attached.file_size && (
+                                <span className="text-[10px] text-zinc-600 flex-shrink-0">{formatFileSize(attached.file_size)}</span>
+                              )}
+                            </button>
+                            {canEdit && (
+                              <button
+                                onClick={() => detach(item.id)}
+                                className="p-0.5 text-zinc-700 hover:text-red-400 rounded flex-shrink-0"
+                                title="Remove attachment (file stays in Docs)"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Row actions */}
@@ -206,6 +294,16 @@ export function SopChecklist({ showId, showDate, initialItems, profile }: SopChe
                             title="Add note"
                           >
                             <MessageSquarePlus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => pickAttachment(item.id)}
+                            disabled={uploadingFor === item.id}
+                            className="p-1 text-zinc-700 hover:text-zinc-300 rounded disabled:opacity-50"
+                            title="Attach file"
+                          >
+                            {uploadingFor === item.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Paperclip className="w-3.5 h-3.5" />}
                           </button>
                           <button
                             onClick={() => toggleNa(item)}
@@ -225,17 +323,29 @@ export function SopChecklist({ showId, showDate, initialItems, profile }: SopChe
                       )}
                     </div>
 
-                    {/* Inline note editor */}
+                    {/* Inline note editor — a note can carry a file too */}
                     {editingNote && (
-                      <div className="flex gap-2 mt-2 pl-8">
+                      <div className="flex flex-wrap gap-2 mt-2 pl-8">
                         <Input
                           value={noteDraft}
                           onChange={e => setNoteDraft(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') saveNote(item) }}
                           placeholder="Add a note..."
-                          className="flex-1 text-sm"
+                          className="flex-1 min-w-40 text-sm"
                           autoFocus
                         />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5"
+                          disabled={uploadingFor === item.id}
+                          onClick={() => pickAttachment(item.id)}
+                        >
+                          {uploadingFor === item.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Paperclip className="w-3.5 h-3.5" />}
+                          {attached ? 'Replace file' : 'Attach file'}
+                        </Button>
                         <Button size="sm" onClick={() => saveNote(item)}>Save</Button>
                         <Button size="sm" variant="ghost" onClick={() => { setNoteFor(null); setNoteDraft('') }}>Cancel</Button>
                       </div>
@@ -251,6 +361,18 @@ export function SopChecklist({ showId, showDate, initialItems, profile }: SopChe
           </div>
         )
       })}
+
+      {/* One hidden picker shared by every row; the target item is tracked in a ref */}
+      <input ref={attachRef} type="file" className="hidden" onChange={handleAttach} />
+
+      {preview && (
+        <FilePreview
+          name={preview.name}
+          url={preview.file_url}
+          type={preview.file_type}
+          onClose={() => setPreview(null)}
+        />
+      )}
 
       {!canEdit && (
         <p className="text-xs text-zinc-600 text-center pt-1">

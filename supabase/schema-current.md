@@ -1,7 +1,7 @@
 # Live database schema — ohtkqgvzagipbmpyozae
 
 > **GENERATED FILE — do not edit.** Regenerate with `npm run db:schema`.
-> Snapshot taken: 2026-07-26T17:02:48.122Z
+> Snapshot taken: 2026-07-30T10:16:59.164Z
 > This reflects the *actual* database, not the intent of the schema-v*.sql history.
 
 ## ⚠️ All CHECK constraints (verify before adding any enum value)
@@ -18,7 +18,7 @@
 - `tasks` — `tasks_department_check`: CHECK ((department = ANY (ARRAY['management'::text, 'finance'::text, 'operations'::text, 'tech'::text, 'sales'::text, 'event'::text])))
 - `tasks` — `tasks_status_check`: CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'done'::text])))
 
-## Tables (15)
+## Tables (16)
 
 ### activity_log
 
@@ -111,8 +111,10 @@ Indexes:
 | file_type | text | YES |  |
 | uploaded_by | uuid | YES |  |
 | created_at | timestamp with time zone | YES | now() |
+| folder_id | uuid | YES |  |
 
 Constraints:
+- FOREIGN KEY `company_files_folder_id_fkey`: FOREIGN KEY (folder_id) REFERENCES company_folders(id) ON DELETE SET NULL
 - FOREIGN KEY `company_files_uploaded_by_fkey`: FOREIGN KEY (uploaded_by) REFERENCES profiles(id) ON DELETE SET NULL
 - PRIMARY KEY `company_files_pkey`: PRIMARY KEY (id)
 
@@ -125,6 +127,32 @@ RLS: enabled
 
 Indexes:
 - CREATE UNIQUE INDEX company_files_pkey ON public.company_files USING btree (id)
+- CREATE INDEX idx_company_files_folder ON public.company_files USING btree (folder_id)
+
+### company_folders
+
+| column | type | nullable | default |
+|---|---|---|---|
+| id | uuid | NO | gen_random_uuid() |
+| name | text | NO |  |
+| parent_id | uuid | YES |  |
+| created_by | uuid | YES |  |
+| created_at | timestamp with time zone | NO | now() |
+
+Constraints:
+- FOREIGN KEY `company_folders_created_by_fkey`: FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+- FOREIGN KEY `company_folders_parent_id_fkey`: FOREIGN KEY (parent_id) REFERENCES company_folders(id) ON DELETE CASCADE
+- PRIMARY KEY `company_folders_pkey`: PRIMARY KEY (id)
+
+RLS: enabled
+- policy `Authenticated can delete folders` (DELETE to {authenticated}) using: true
+- policy `Authenticated can insert folders` (INSERT to {authenticated}) check: true
+- policy `Authenticated can update folders` (UPDATE to {authenticated}) using: true
+- policy `Authenticated can view folders` (SELECT to {authenticated}) using: true
+
+Indexes:
+- CREATE UNIQUE INDEX company_folders_pkey ON public.company_folders USING btree (id)
+- CREATE INDEX idx_company_folders_parent ON public.company_folders USING btree (parent_id)
 
 ### documents
 
@@ -393,6 +421,7 @@ RLS: enabled
 Indexes:
 - CREATE INDEX idx_checklist_show ON public.show_checklist_items USING btree (show_id)
 - CREATE UNIQUE INDEX show_checklist_items_pkey ON public.show_checklist_items USING btree (id)
+- CREATE UNIQUE INDEX uq_checklist_show_section_title ON public.show_checklist_items USING btree (show_id, section, title)
 
 ### shows
 

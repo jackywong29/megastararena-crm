@@ -57,10 +57,18 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
 
   if (!show) notFound()
 
-  // Booking SOP checklist — seed from the template the first time a show is opened
+  // Booking SOP checklist — seed from the template the first time a show is opened.
+  // Upsert (not insert): two concurrent first-opens both saw an empty checklist
+  // and each inserted the full template, doubling every item. The unique index
+  // from schema-v16 plus ignoreDuplicates makes a racing second seed a no-op.
   let checklist = checklistRes.data
   if (!checklist || checklist.length === 0) {
-    await supabase.from('show_checklist_items').insert(buildChecklistRows(id, user.id))
+    await supabase
+      .from('show_checklist_items')
+      .upsert(buildChecklistRows(id, user.id), {
+        onConflict: 'show_id,section,title',
+        ignoreDuplicates: true,
+      })
     const seeded = await supabase
       .from('show_checklist_items')
       .select('*')
